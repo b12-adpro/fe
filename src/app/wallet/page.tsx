@@ -9,7 +9,7 @@ import { ConfirmationModal } from "./components/confirmation-modal"
 import { LoaderIcon, RefreshIcon, ErrorIcon, ChevronRightIcon } from "./components/icons"
 import Link from "next/link"
 
-const API_BASE_URL = "localhost:8080"
+const API_BASE_URL = "https://comfortable-tonia-aryaraditya-081c5726.koyeb.app/api"
 
 export default function WalletPage() {
   const [wallet, setWallet] = useState<Wallet | null>(null)
