@@ -8,8 +8,8 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/wallet'); // Redirect ke dashboard
+    router.push('/wallet'); // Redirect ke Wallet
   }, [router]);
 
-  return <div>Redirecting to Dashboard...</div>;
+  return <div>Redirecting to Wallet...</div>;
 }
