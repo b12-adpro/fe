@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { PlusCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useCallback, useEffect, useState } from 'react';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import DonationHistoryPerCampaign from '.././donations/component/DonationHistoryPerCampaign';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts'
+import AddCampaignForm from './CampaignForm';
 
 interface CampaignDTO {
   id: number;
@@ -14,7 +16,7 @@ interface CampaignDTO {
   startDate: string;
   endDate: string;
   verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
-  progressStatus: 'UPCOMING' | 'ACTIVE' | 'COMPLETED';
+  progressStatus: 'ACTIVE' | 'INACTIVE';
 }
 
 interface FundUsageProofDTO {
@@ -40,23 +42,27 @@ export default function CampaignPage() {
   const [isProofsModalOpen, setIsProofsModalOpen] = useState(false);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, []);
+  // <-- 2. State untuk modal Add Campaign
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const fetchCampaigns = async () => {
+  // Gunakan useCallback agar tidak dibuat ulang terus-menerus
+  const fetchCampaigns = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch('http://localhost:8080/admin/campaigns');
       const data = await response.json();
-      console.log('Fetched campaigns:', data); 
+      console.log('Fetched campaigns:', data);
       setCampaigns(data);
     } catch (error) {
       console.error('Error fetching campaigns:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Dependensi kosong berarti fungsi ini stabil
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]); // Gunakan fetchCampaigns sebagai dependensi
 
   const fetchFundUsageProofs = async (campaignId: number) => {
     setProofsLoading(true);
@@ -77,7 +83,7 @@ export default function CampaignPage() {
     }
   };
 
-  
+
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -97,7 +103,7 @@ export default function CampaignPage() {
     amount: proof.amount || 0,
     description: proof.description,
   }));
-  
+
   const openEditModal = (campaign: CampaignDTO) => {
     setSelectedCampaign({...campaign});
     setIsEditModalOpen(true);
@@ -125,31 +131,41 @@ export default function CampaignPage() {
     setSelectedCampaign(campaign);
     setIsDonationModalOpen(true);
   };
-  
+
   const closeDonationModal = () => {
     setIsDonationModalOpen(false);
     setSelectedCampaign(null);
   };
 
+  // <-- 3. Fungsi untuk modal Add Campaign
+  const openAddModal = () => setIsAddModalOpen(true);
+  const closeAddModal = () => setIsAddModalOpen(false);
+
+  // <-- 4. Callback untuk refresh data
+  const handleCampaignCreated = () => {
+      fetchCampaigns(); // Muat ulang data tabel
+      closeAddModal();  // Tutup modal
+  };
+
   const handleVerify = async (approve: boolean) => {
     if (!selectedCampaign) return;
-    
+
     setUpdateLoading(true);
     setUpdateMessage({ text: '', type: '' });
-    
+
     try {
       const response = await fetch(`http://localhost:8080/admin/campaigns/${selectedCampaign.id}/verify?approve=${approve}`, {
         method: 'POST',
       });
-      
+
       if (response.ok) {
         const updatedCampaign = await response.json();
         setCampaigns(campaigns.map(c => c.id === updatedCampaign.id ? updatedCampaign : c));
-        setUpdateMessage({ 
-          text: approve ? 'Campaign verified successfully!' : 'Campaign rejected successfully!', 
-          type: 'success' 
+        setUpdateMessage({
+          text: approve ? 'Campaign verified successfully!' : 'Campaign rejected successfully!',
+          type: 'success'
         });
-        
+
         setTimeout(() => {
           closeEditModal();
         }, 1500);
@@ -179,42 +195,57 @@ export default function CampaignPage() {
     return date.toLocaleDateString();
   };
 
-  const chartData = campaigns.map((campaign) => ({
-    name: campaign.title,
-    targetAmount: campaign.targetAmount,
-    currentAmount: campaign.currentAmount,
-  }));
-
   if (loading) return <p className="text-center">Loading campaigns...</p>;
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
+
+        {/* <-- 5. Tambahkan Header dan Tombol Add --> */}
+        <div className="sm:flex sm:items-center sm:justify-between mb-6">
+            <div>
+                <h1 className="text-2xl font-bold leading-tight text-gray-900">Manajemen Kampanye</h1>
+                <p className="mt-1 text-sm text-gray-600">
+                    Lihat dan kelola semua kampanye penggalangan dana.
+                </p>
+            </div>
+            <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+                <button
+                    type="button"
+                    onClick={openAddModal} // Panggil openAddModal saat diklik
+                    className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
+                >
+                    <PlusCircleIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                    Buat Kampanye Baru
+                </button>
+            </div>
+        </div>
+
+
       <div className="flex flex-wrap gap-4 mb-6">
         <div>
-          <label className="block font-semibold mb-1">Filter Verification Status:</label>
+          <label className="block font-semibold mb-1">Filter Status Verifikasi:</label>
           <select
             value={verificationFilter}
             onChange={(e) => setVerificationFilter(e.target.value)}
             className="border rounded px-3 py-1"
           >
-            <option value="ALL">All</option>
+            <option value="ALL">Semua</option>
             <option value="PENDING">Pending</option>
-            <option value="VERIFIED">Verified</option>
-            <option value="REJECTED">Rejected</option>
+            <option value="VERIFIED">Terverifikasi</option>
+            <option value="REJECTED">Ditolak</option>
           </select>
         </div>
 
         <div>
-          <label className="block font-semibold mb-1">Filter Progress Status:</label>
+          <label className="block font-semibold mb-1">Filter Status Progres:</label>
           <select
             value={progressFilter}
             onChange={(e) => setProgressFilter(e.target.value)}
             className="border rounded px-3 py-1"
           >
-            <option value="ALL">All</option>
-            <option value="UPCOMING">Upcoming</option>
-            <option value="ACTIVE">Active</option>
-            <option value="COMPLETED">Completed</option>
+            <option value="ALL">Semua</option>
+            <option value="ACTIVE">Aktif</option>
+            <option value="INACTIVE">Tidak Aktif</option>
           </select>
         </div>
       </div>
@@ -222,14 +253,14 @@ export default function CampaignPage() {
         <table className="w-full table-auto border-collapse">
           <thead>
             <tr className="bg-gray-100 text-gray-600 text-sm leading-normal">
-              <th className="py-3 px-4 text-left">Title</th>
+              <th className="py-3 px-4 text-left">Judul</th>
               <th className="py-3 px-4 text-left">Fundraiser</th>
               <th className="py-3 px-4 text-left">Target</th>
-              <th className="py-3 px-4 text-left">Current</th>
-              <th className="py-3 px-4 text-left">Start</th>
-              <th className="py-3 px-4 text-left">End</th>
-              <th className="py-3 px-4 text-left">Verification</th>
-              <th className="py-3 px-4 text-left">Progress</th>
+              <th className="py-3 px-4 text-left">Terkumpul</th>
+              <th className="py-3 px-4 text-left">Mulai</th>
+              <th className="py-3 px-4 text-left">Selesai</th>
+              <th className="py-3 px-4 text-left">Verifikasi</th>
+              <th className="py-3 px-4 text-left">Progres</th>
               <th className="py-3 px-4 text-right">Aksi</th>
             </tr>
           </thead>
@@ -239,8 +270,8 @@ export default function CampaignPage() {
                 <tr key={campaign.id} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="py-3 px-4">{campaign.title}</td>
                   <td className="py-3 px-4">{campaign.fundraiserName}</td>
-                  <td className="py-3 px-4">{campaign.targetAmount}</td>
-                  <td className="py-3 px-4">{campaign.currentAmount}</td>
+                  <td className="py-3 px-4">{campaign.targetAmount.toLocaleString()}</td>
+                  <td className="py-3 px-4">{campaign.currentAmount.toLocaleString()}</td>
                   <td className="py-3 px-4">{formatDate(campaign.startDate)}</td>
                   <td className="py-3 px-4">{formatDate(campaign.endDate)}</td>
                   <td className="py-3 px-4">
@@ -261,8 +292,6 @@ export default function CampaignPage() {
                       <span
                         className={`px-2 py-1 rounded-full text-xs ${
                           campaign.progressStatus === 'ACTIVE'
-                            ? 'bg-blue-100 text-blue-700'
-                            : campaign.progressStatus === 'UPCOMING'
                             ? 'bg-purple-100 text-purple-700'
                             : 'bg-gray-100 text-gray-700'
                         }`}
@@ -275,29 +304,27 @@ export default function CampaignPage() {
                   </td>
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end space-x-2">
-                    {campaign.verificationStatus === 'PENDING' && (
+                      {campaign.verificationStatus === 'PENDING' && (
                         <button
                           onClick={() => openEditModal(campaign)}
                           className="px-3 py-1 rounded-md text-white text-xs bg-blue-500 hover:bg-blue-600"
                         >
-                          Verify
+                          Verifikasi
                         </button>
                       )}
                       <button
                         onClick={() => openProofsModal(campaign)}
                         className={`px-3 py-1 rounded-md text-white text-xs ${
-                          campaign.progressStatus === 'ACTIVE' || campaign.progressStatus === 'COMPLETED'
-                            ? 'bg-green-600 hover:bg-green-700'
-                            : 'bg-gray-400'
+                           'bg-green-600 hover:bg-green-700'
                         }`}
                       >
-                        Proofs
+                        Bukti
                       </button>
                       <button
                         onClick={() => openDonationModal(campaign)}
                         className="px-3 py-1 rounded-md text-white bg-purple-600 hover:bg-purple-700 text-xs"
                       >
-                        Donations
+                        Donasi
                       </button>
                     </div>
                   </td>
@@ -306,7 +333,7 @@ export default function CampaignPage() {
             ) : (
               <tr>
                 <td colSpan={9} className="py-8 text-center text-gray-500">
-                  No campaigns found
+                  Tidak ada kampanye yang ditemukan
                 </td>
               </tr>
             )}
@@ -314,32 +341,30 @@ export default function CampaignPage() {
         </table>
       </div>
 
-
-      {/* Edit Modal */}
       {isEditModalOpen && selectedCampaign && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-w-full">
-            <h2 className="text-xl font-bold mb-4">Verify Campaign</h2>
-            
+             <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Verifikasi Kampanye</h2>
+                <button onClick={closeEditModal} className="text-gray-500 hover:text-gray-700">
+                    <XMarkIcon className="h-6 w-6" />
+                </button>
+            </div>
             <div className="mb-4">
-              <label className="block font-semibold mb-1">Campaign Title:</label>
+              <label className="block font-semibold mb-1">Judul Kampanye:</label>
               <p className="border px-3 py-2 rounded bg-gray-100">{selectedCampaign.title}</p>
             </div>
-            
             <div className="mb-4">
-              <label className="block font-semibold mb-1">Current Status:</label>
+              <label className="block font-semibold mb-1">Status Saat Ini:</label>
               <p className="px-3 py-2">
                 <span className="px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-700">
                   PENDING
                 </span>
               </p>
             </div>
-
-            <p className="mb-4">Do you want to approve this campaign?</p>
             <p className="mb-6 text-sm text-gray-600">
-              When approved, this campaign will be set to VERIFIED status.
+              Apakah Anda ingin menyetujui kampanye ini?
             </p>
-
             {updateMessage.text && (
               <div className={`mb-4 p-2 rounded ${
                 updateMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -347,14 +372,13 @@ export default function CampaignPage() {
                 {updateMessage.text}
               </div>
             )}
-
             <div className="flex justify-end gap-2 mt-6">
               <button
                 type="button"
                 onClick={closeEditModal}
                 className="px-4 py-2 border rounded hover:bg-gray-100"
               >
-                Cancel
+                Batal
               </button>
               <button
                 type="button"
@@ -362,7 +386,7 @@ export default function CampaignPage() {
                 className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
                 disabled={updateLoading}
               >
-                Reject
+                Tolak
               </button>
               <button
                 type="button"
@@ -370,127 +394,99 @@ export default function CampaignPage() {
                 className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
                 disabled={updateLoading}
               >
-                {updateLoading ? 'Processing...' : 'Approve'}
+                {updateLoading ? 'Memproses...' : 'Setujui'}
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Donation Modal (Existing) */}
       {isDonationModalOpen && selectedCampaign && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Donation History - {selectedCampaign.title}</h2>
-              <button 
-                onClick={closeDonationModal}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+              <h2 className="text-xl font-bold">Riwayat Donasi - {selectedCampaign.title}</h2>
+              <button onClick={closeDonationModal} className="text-gray-500 hover:text-gray-700">
+                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            
             <DonationHistoryPerCampaign campaignId={selectedCampaign.id.toString()} />
-            
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
                 onClick={closeDonationModal}
                 className="px-4 py-2 border rounded hover:bg-gray-100"
               >
-                Close
+                Tutup
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Fund Usage Proofs Modal */}
+      {/* Proofs Modal (Existing) */}
       {isProofsModalOpen && selectedCampaign && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Fund Usage Proofs - {selectedCampaign.title}</h2>
-              <button 
-                onClick={closeProofsModal}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+              <h2 className="text-xl font-bold">Bukti Penggunaan Dana - {selectedCampaign.title}</h2>
+              <button onClick={closeProofsModal} className="text-gray-500 hover:text-gray-700">
+                <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            
-            {proofsLoading ? (
-              <div className="flex justify-center items-center h-40">
-                <p>Loading proofs...</p>
-              </div>
-            ) : fundProofs.length === 0 ? (
-              <div className="text-center py-10">
-                <p className="text-gray-500">No fund usage proofs found for this campaign.</p>
-              </div>
-            ) : (
-              <div className="mb-6 overflow-x-auto">
-                <div className="min-w-[600px]">
-                    <h3 className="font-semibold mb-2">
-                      Current Amount: ${selectedCampaign.currentAmount?.toLocaleString()} &nbsp;
-                      | Target Amount: ${selectedCampaign.targetAmount?.toLocaleString()}
-                    </h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart
-                        data={fundProofs.map(proof => ({
-                          name: proof.title,
-                          date: formatDate(proof.submittedAt),
-                          amount: proof.amount || 0,
-                          description: proof.description
-                        }))}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip
-                          content={({ active, payload, label }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload;
-                              return (
-                                <div className="bg-white p-3 border rounded shadow text-sm max-w-xs break-words">
-                                  <p className="font-bold mb-1">{data.name}</p>
-                                  <p>{data.description}</p>
-                                  <p className="text-blue-600">Amount: ${data.amount.toLocaleString()}</p>
-                                  <p className="text-gray-500">Submitted: {label}</p>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                          <Line 
-                            type="monotone" 
-                            dataKey="amount" 
-                            stroke="#4f46e5" 
-                            strokeWidth={3}
-                            activeDot={{ r: 6 }} 
-                          />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
+             {proofsLoading ? (
+               <p>Loading proofs...</p>
+             ) : fundProofs.length === 0 ? (
+               <p>Tidak ada bukti penggunaan dana.</p>
+             ) : (
+                <div className="mb-6 overflow-x-auto">
+                   <div className="min-w-[600px]">
+                      <h3 className="font-semibold mb-2">
+                         Terkumpul: ${selectedCampaign.currentAmount?.toLocaleString()} | Target: ${selectedCampaign.targetAmount?.toLocaleString()}
+                       </h3>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={fundProofs.map(proof => ({ name: proof.title, date: formatDate(proof.submittedAt), amount: proof.amount || 0, description: proof.description }))} >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="date" />
+                              <YAxis />
+                              <Tooltip content={<CustomTooltip />} />
+                              <Line type="monotone" dataKey="amount" stroke="#4f46e5" strokeWidth={3} activeDot={{ r: 6 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
-            )}
-            
+             )}
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
                 onClick={closeProofsModal}
                 className="px-4 py-2 border rounded hover:bg-gray-100"
               >
-                Close
+                Tutup
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* <-- 6. Modal untuk Add Campaign --> */}
+      {isAddModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[95vh] overflow-y-auto">
+                   <div className="p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900">Buat Kampanye Baru</h2>
+                            <button onClick={closeAddModal} className="text-gray-400 hover:text-gray-600">
+                                <XMarkIcon className="h-6 w-6" />
+                            </button>
+                        </div>
+                        <AddCampaignForm onSuccess={handleCampaignCreated} />
+                   </div>
+              </div>
+          </div>
+      )}
+
     </div>
   );
 }
