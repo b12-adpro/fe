@@ -1,281 +1,81 @@
 "use client"
 
-import type React from "react"
-
 import { useEffect, useState } from "react"
-import { createPortal } from "react-dom"
+import type { Wallet, Transaction, ApiResponse, UserRole } from "./types"
+import { WalletCard } from "./components/wallet-card"
+import { TransactionList } from "./components/transaction-list"
+import { TopUpModal } from "./components/top-up-modal"
+import { ConfirmationModal } from "./components/confirmation-modal"
+import { LoaderIcon, RefreshIcon, ErrorIcon, ChevronRightIcon } from "./components/icons"
+import Link from "next/link"
 
-interface Wallet {
-  id: string
-  userId: string
-  balance: number
-}
-
-type TransactionType = "TOP_UP" | "WITHDRAWAL" | "DONATION"
-
-interface Transaction {
-  id: string
-  type: TransactionType
-  amount: number
-  timestamp: string
-  wallet: Wallet
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
-}
-
-const LoaderIcon = () => (
-  <svg
-    className="animate-spin"
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-  </svg>
-)
-
-const RefreshIcon = () => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-  </svg>
-)
-
-const ArrowDownCircleIcon = () => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 8v8" />
-    <path d="m8 12 4 4 4-4" />
-  </svg>
-)
-
-const ArrowUpCircleIcon = () => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 16V8" />
-    <path d="m8 12 4-4 4 4" />
-  </svg>
-)
-
-const GiftIcon = () => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M20 12v10H4V12" />
-    <path d="M2 7h20v5H2z" />
-    <path d="M12 22V7" />
-    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
-  </svg>
-)
-
-const ErrorIcon = () => (
-  <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-    <path
-      fillRule="evenodd"
-      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-      clipRule="evenodd"
-    />
-  </svg>
-)
-
-const Button = ({
-  children,
-  onClick,
-  disabled = false,
-  variant = "default",
-  className = "",
-}: {
-  children: React.ReactNode
-  onClick?: () => void
-  disabled?: boolean
-  variant?: "default" | "outline"
-  className?: string
-}) => {
-  const baseStyles =
-    "px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
-  const variantStyles =
-    variant === "default"
-      ? "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
-      : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500"
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`${baseStyles} ${variantStyles} ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${className}`}
-    >
-      {children}
-    </button>
-  )
-}
-
-const Dialog = ({
-  isOpen,
-  onClose,
-  children,
-}: {
-  isOpen: boolean
-  onClose: () => void
-  children: React.ReactNode
-}) => {
-  if (!isOpen) return null
-
-  return typeof document !== "undefined"
-    ? createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-          <div className="z-10 bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden">{children}</div>
-        </div>,
-        document.body,
-      )
-    : null
-}
-
-const DialogHeader = ({ children }: { children: React.ReactNode }) => (
-  <div className="px-6 py-4 border-b border-gray-200">{children}</div>
-)
-
-const DialogTitle = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-lg font-medium text-gray-900">{children}</h3>
-)
-
-const DialogContent = ({ children }: { children: React.ReactNode }) => <div className="px-6 py-4">{children}</div>
-
-const DialogFooter = ({ children }: { children: React.ReactNode }) => (
-  <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2">{children}</div>
-)
-
-const Input = ({
-  id,
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  className = "",
-}: {
-  id: string
-  type?: string
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  placeholder?: string
-  className?: string
-}) => (
-  <input
-    id={id}
-    type={type}
-    value={value}
-    onChange={onChange}
-    placeholder={placeholder}
-    className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 ${className}`}
-  />
-)
-
-const Label = ({
-  htmlFor,
-  children,
-  className = "",
-}: {
-  htmlFor: string
-  children: React.ReactNode
-  className?: string
-}) => (
-  <label htmlFor={htmlFor} className={`block text-sm font-medium text-gray-700 ${className}`}>
-    {children}
-  </label>
-)
+const API_BASE_URL = "localhost:8080"
 
 export default function WalletPage() {
   const [wallet, setWallet] = useState<Wallet | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [userRole, setUserRole] = useState<UserRole>("Donatur")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [isTopUpDialogOpen, setIsTopUpDialogOpen] = useState(false)
-  const [topUpAmount, setTopUpAmount] = useState("")
-  const [isMounted, setIsMounted] = useState(false)
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false)
+  const [confirmationState, setConfirmationState] = useState<{
+    isOpen: boolean
+    status: "success" | "error"
+    amount?: number
+    errorMessage?: string
+  }>({
+    isOpen: false,
+    status: "success",
+  })
 
-  const userId = "550e8400-e29b-41d4-a716-44665544000"
+  const userId = "550e8400-e29b-41d4-a716-044665544000"
 
-  useEffect(() => {
-    setIsMounted(true)
-    return () => setIsMounted(false)
-  }, [])
+  const fetchUserRole = async () => {
+    try {
+      // Menunggu API dari multiservice lain
+      // const response = await fetch(`${API_BASE_URL}/user/${userId}/role`)
+      // if (response.ok) {
+      //   const data = await response.json()
+      //   setUserRole(data.role)
+      // } else {
+      //   setUserRole("Donatur") // Default fallback
+      // }
 
+      // For now, set default value
+      setUserRole("Donatur")
+    } catch (error) {
+      console.error("Failed to fetch user role:", error)
+      setUserRole("Donatur") // Default fallback
+    }
+  }
+
+  // Fetch wallet data directly in the wallet page
   const fetchWalletData = async () => {
     try {
       setIsRefreshing(true)
 
+      // Fetch user role
+      await fetchUserRole()
+
       // Fetch wallet data
-      const walletRes = await fetch(
-        `https://comfortable-tonia-aryaraditya-081c5726.koyeb.app/api/wallet?userId=${userId}`,
-      )
+      const walletRes = await fetch(`${API_BASE_URL}/wallet?userId=${userId}`)
 
       if (!walletRes.ok) {
         throw new Error(`Error: ${walletRes.status} ${walletRes.statusText}`)
       }
 
-      const walletData = await walletRes.json()
+      const walletData: ApiResponse<Wallet> = await walletRes.json()
       setWallet(walletData.data)
 
       // Fetch transaction data
-      const transactionRes = await fetch(
-        `https://comfortable-tonia-aryaraditya-081c5726.koyeb.app/api/transaction?userId=${userId}`,
-      )
+      const transactionRes = await fetch(`${API_BASE_URL}/transaction/user/${userId}`)
 
       if (!transactionRes.ok) {
         throw new Error(`Error: ${transactionRes.status} ${transactionRes.statusText}`)
       }
 
-      const transactionData = await transactionRes.json()
+      const transactionData: ApiResponse<Transaction[]> = await transactionRes.json()
       setTransactions(transactionData.data)
 
       setError(null)
@@ -288,20 +88,46 @@ export default function WalletPage() {
     }
   }
 
-  const handleTopUp = () => {
-    // This would be implemented to call the API
-    // For now, just close the dialog
-    setIsTopUpDialogOpen(false)
-    setTopUpAmount("")
+  const handleTopUp = async (amount: number, method: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/wallet/topup?userId=${userId}&amount=${amount}`, {
+        method: "POST",
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to process top up. Please try again.")
+      }
+
+      const data: ApiResponse<Wallet> = await response.json()
+      setWallet(data.data)
+
+      // Refresh transactions after top up
+      const transactionRes = await fetch(`${API_BASE_URL}/transaction/user/${userId}`)
+      const transactionData: ApiResponse<Transaction[]> = await transactionRes.json()
+      setTransactions(transactionData.data)
+
+      // Show success confirmation
+      setConfirmationState({
+        isOpen: true,
+        status: "success",
+        amount: amount,
+      })
+    } catch (error: any) {
+      // Show error confirmation
+      setConfirmationState({
+        isOpen: true,
+        status: "error",
+        errorMessage: error.message || "Failed to process top up. Please try again.",
+      })
+    } finally {
+      setIsTopUpModalOpen(false)
+    }
   }
 
   useEffect(() => {
     fetchWalletData()
   }, [])
-
-  if (!isMounted) {
-    return null
-  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -346,143 +172,41 @@ export default function WalletPage() {
       ) : (
         <>
           {/* Wallet Card */}
-          {wallet && (
-            <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <div className="text-sm font-medium text-gray-500 mb-1">Current Balance</div>
-                  <div className="text-3xl font-bold text-green-600">Rp {wallet.balance.toLocaleString("id-ID")}</div>
-                </div>
-
-                <Button
-                  onClick={() => setIsTopUpDialogOpen(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Top Up
-                </Button>
-              </div>
-            </div>
-          )}
+          {wallet && <WalletCard wallet={wallet} onTopUp={() => setIsTopUpModalOpen(true)} />}
 
           {/* Transaction List */}
           <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-4">Transaction History</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Transaction History</h2>
+              <Link
+                href="/transaction"
+                className="text-green-600 hover:text-green-700 flex items-center gap-1 text-sm font-medium"
+              >
+                View All <ChevronRightIcon />
+              </Link>
+            </div>
 
-            {transactions.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-md p-8 text-center">
-                <p className="text-gray-500">No transactions found.</p>
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Type
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Amount
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {transactions.map((transaction) => (
-                        <tr key={transaction.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              {transaction.type === "TOP_UP" && (
-                                <span className="text-green-500">
-                                  <ArrowDownCircleIcon />
-                                </span>
-                              )}
-                              {transaction.type === "WITHDRAWAL" && (
-                                <span className="text-red-500">
-                                  <ArrowUpCircleIcon />
-                                </span>
-                              )}
-                              {transaction.type === "DONATION" && (
-                                <span className="text-purple-500">
-                                  <GiftIcon />
-                                </span>
-                              )}
-                              <span className="font-medium">
-                                {transaction.type === "TOP_UP" && "Top Up"}
-                                {transaction.type === "WITHDRAWAL" && "Withdrawal"}
-                                {transaction.type === "DONATION" && "Donation"}
-                              </span>
-                            </div>
-                          </td>
-                          <td
-                            className={`px-6 py-4 whitespace-nowrap font-medium ${
-                              transaction.type === "TOP_UP"
-                                ? "text-green-600"
-                                : transaction.type === "WITHDRAWAL"
-                                  ? "text-red-600"
-                                  : "text-purple-600"
-                            }`}
-                          >
-                            {transaction.type === "TOP_UP" ? "+ " : "- "}
-                            Rp {transaction.amount.toLocaleString("id-ID")}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">{formatDate(transaction.timestamp)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Completed
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+            <TransactionList transactions={transactions} limit={3} />
           </div>
         </>
       )}
 
-      {/* Top Up Dialog */}
-      {isTopUpDialogOpen && (
-        <Dialog isOpen={isTopUpDialogOpen} onClose={() => setIsTopUpDialogOpen(false)}>
-          <DialogHeader>
-            <DialogTitle>Top Up Wallet</DialogTitle>
-          </DialogHeader>
-          <DialogContent>
-            <div className="grid gap-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="amount" className="text-right">
-                  Amount
-                </Label>
-                <div className="col-span-3 flex items-center">
-                  <span className="mr-2">Rp</span>
-                  <Input
-                    id="amount"
-                    type="number"
-                    value={topUpAmount}
-                    onChange={(e) => setTopUpAmount(e.target.value)}
-                    placeholder="Enter amount"
-                  />
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsTopUpDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleTopUp} disabled={!topUpAmount || Number.parseFloat(topUpAmount) <= 0}>
-              Top Up
-            </Button>
-          </DialogFooter>
-        </Dialog>
-      )}
+      {/* Top Up Modal */}
+      <TopUpModal isOpen={isTopUpModalOpen} onClose={() => setIsTopUpModalOpen(false)} onTopUp={handleTopUp} />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmationState.isOpen}
+        onClose={() => setConfirmationState({ ...confirmationState, isOpen: false })}
+        status={confirmationState.status}
+        amount={confirmationState.amount}
+        currentBalance={wallet?.balance || 0}
+        errorMessage={confirmationState.errorMessage}
+        onRetry={() => {
+          setConfirmationState({ ...confirmationState, isOpen: false })
+          setIsTopUpModalOpen(true)
+        }}
+      />
     </div>
   )
 }
