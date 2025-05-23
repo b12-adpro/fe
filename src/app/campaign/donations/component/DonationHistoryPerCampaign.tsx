@@ -24,7 +24,7 @@ export default function DonationHistoryPerCampaign({ campaignId }: { campaignId:
     const fetchDonations = async () => {
       try {
         console.log("Campaign ID from query:", campaignId);
-        const response = await fetch(`http://localhost:8080/admin/donation-history/campaign/${campaignId}`);
+        const response = await fetch(`https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/donation-history/campaign/${campaignId}`);
         if (response.ok) {
           const data = await response.json();
           const donationList = Array.isArray(data) ? data : [];

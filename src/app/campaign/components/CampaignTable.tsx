@@ -47,7 +47,7 @@ export default function CampaignPage() {
   const fetchCampaigns = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/admin/campaigns');
+      const response = await fetch('https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/campaigns');
       const data = await response.json();
       console.log('Fetched campaigns:', data); 
       setCampaigns(data);
@@ -61,7 +61,7 @@ export default function CampaignPage() {
   const fetchFundUsageProofs = async (campaignId: number) => {
     setProofsLoading(true);
     try {
-      const response = await fetch(`http://localhost:8080/admin/campaigns/${campaignId}/fund-usage-proofs`);
+      const response = await fetch(`https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/campaigns/${campaignId}/fund-usage-proofs`);
       if (response.ok) {
         const data = await response.json();
         setFundProofs(data);
@@ -138,7 +138,7 @@ export default function CampaignPage() {
     setUpdateMessage({ text: '', type: '' });
     
     try {
-      const response = await fetch(`http://localhost:8080/admin/campaigns/${selectedCampaign.id}/verify?approve=${approve}`, {
+      const response = await fetch(`https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/campaigns/${selectedCampaign.id}/verify?approve=${approve}`, {
         method: 'POST',
       });
       
