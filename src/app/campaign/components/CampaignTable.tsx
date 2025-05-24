@@ -4,7 +4,7 @@ import { PlusCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useCallback, useEffect, useState } from 'react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import DonationHistoryPerCampaign from '.././donations/component/DonationHistoryPerCampaign';
-import AddCampaignForm from './CampaignForm';
+import AddCampaignForm from './CampaignForm'; 
 
 interface CampaignDTO {
   id: number;
@@ -16,7 +16,7 @@ interface CampaignDTO {
   startDate: string;
   endDate: string;
   verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
-  progressStatus: 'ACTIVE' | 'INACTIVE';
+  progressStatus: 'PENDING' | 'ACTIVE' | 'INACTIVE';
 }
 
 interface FundUsageProofDTO {
@@ -28,7 +28,7 @@ interface FundUsageProofDTO {
   submittedAt: string;
 }
 
-export default function CampaignPage() {
+export default function CampaignTable() {
   const [campaigns, setCampaigns] = useState<CampaignDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [verificationFilter, setVerificationFilter] = useState<string>('ALL');
@@ -41,11 +41,8 @@ export default function CampaignPage() {
   const [proofsLoading, setProofsLoading] = useState(false);
   const [isProofsModalOpen, setIsProofsModalOpen] = useState(false);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
-
-  // <-- 2. State untuk modal Add Campaign
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // Gunakan useCallback agar tidak dibuat ulang terus-menerus
   const fetchCampaigns = useCallback(async () => {
     setLoading(true);
     try {
@@ -58,11 +55,11 @@ export default function CampaignPage() {
     } finally {
       setLoading(false);
     }
-  }, []); // Dependensi kosong berarti fungsi ini stabil
+  }, []);
 
   useEffect(() => {
     fetchCampaigns();
-  }, [fetchCampaigns]); // Gunakan fetchCampaigns sebagai dependensi
+  }, [fetchCampaigns]);
 
   const fetchFundUsageProofs = async (campaignId: number) => {
     setProofsLoading(true);
@@ -137,14 +134,12 @@ export default function CampaignPage() {
     setSelectedCampaign(null);
   };
 
-  // <-- 3. Fungsi untuk modal Add Campaign
   const openAddModal = () => setIsAddModalOpen(true);
   const closeAddModal = () => setIsAddModalOpen(false);
 
-  // <-- 4. Callback untuk refresh data
   const handleCampaignCreated = () => {
-      fetchCampaigns(); // Muat ulang data tabel
-      closeAddModal();  // Tutup modal
+      fetchCampaigns();
+      closeAddModal();
   };
 
   const handleVerify = async (approve: boolean) => {
@@ -199,8 +194,6 @@ export default function CampaignPage() {
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-
-        {/* <-- 5. Tambahkan Header dan Tombol Add --> */}
         <div className="sm:flex sm:items-center sm:justify-between mb-6">
             <div>
                 <h1 className="text-2xl font-bold leading-tight text-gray-900">Manajemen Kampanye</h1>
@@ -211,7 +204,7 @@ export default function CampaignPage() {
             <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
                 <button
                     type="button"
-                    onClick={openAddModal} // Panggil openAddModal saat diklik
+                    onClick={openAddModal}
                     className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
                 >
                     <PlusCircleIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
@@ -219,7 +212,6 @@ export default function CampaignPage() {
                 </button>
             </div>
         </div>
-
 
       <div className="flex flex-wrap gap-4 mb-6">
         <div>
@@ -244,6 +236,7 @@ export default function CampaignPage() {
             className="border rounded px-3 py-1"
           >
             <option value="ALL">Semua</option>
+            <option value="PENDING">Pending</option>
             <option value="ACTIVE">Aktif</option>
             <option value="INACTIVE">Tidak Aktif</option>
           </select>
@@ -401,7 +394,6 @@ export default function CampaignPage() {
         </div>
       )}
 
-      {/* Donation Modal (Existing) */}
       {isDonationModalOpen && selectedCampaign && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -425,7 +417,6 @@ export default function CampaignPage() {
         </div>
       )}
 
-      {/* Proofs Modal (Existing) */}
       {isProofsModalOpen && selectedCampaign && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -470,7 +461,6 @@ export default function CampaignPage() {
         </div>
       )}
 
-      {/* <-- 6. Modal untuk Add Campaign --> */}
       {isAddModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[95vh] overflow-y-auto">

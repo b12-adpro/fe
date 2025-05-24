@@ -6,14 +6,12 @@ interface CampaignFormData {
   target: number;
   deskripsi: string;
   buktiPenggalanganDana: string;
-  fundraiserId: string; // <-- Ditambahkan
+  fundraiserId: string;
 }
 
 interface AddCampaignFormProps {
   onSuccess: () => void;
-  
 }
-
 
 export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
   const [formData, setFormData] = useState<CampaignFormData>({
@@ -21,7 +19,7 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
     target: 0,
     deskripsi: '',
     buktiPenggalanganDana: '',
-    fundraiserId: '' // <-- Ditambahkan
+    fundraiserId: ''
   });
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -41,7 +39,7 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
     if (!formData.deskripsi.trim()) {
       newErrors.deskripsi = 'Deskripsi kampanye wajib diisi';
     }
-    if (!formData.fundraiserId.trim()) { // <-- Ditambahkan Validasi
+    if (!formData.fundraiserId.trim()) {
       newErrors.fundraiserId = 'Fundraiser ID wajib diisi';
     }
     setErrors(newErrors);
@@ -125,7 +123,7 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
       target: formData.target,
       deskripsi: formData.deskripsi,
       buktiPenggalanganDana: formData.buktiPenggalanganDana,
-      fundraiserId: formData.fundraiserId, // <-- Dikirim ke backend
+      fundraiserId: formData.fundraiserId,
       datetime: new Date().toISOString()
     };
 
@@ -140,12 +138,12 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
 
       if (response.ok) {
         setMessage({ text: `Kampanye berhasil dibuat!`, type: 'success' });
-        setFormData({ judul: '', target: 0, deskripsi: '', buktiPenggalanganDana: '', fundraiserId: '' }); // <-- Ditambahkan reset
+        setFormData({ judul: '', target: 0, deskripsi: '', buktiPenggalanganDana: '', fundraiserId: '' });
         setFile(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
-        onSuccess(); // Panggil callback sukses ke parent
+        onSuccess();
       } else {
         const errorData = await response.json().catch(() => ({ message: 'Gagal membuat kampanye.' }));
         setMessage({
@@ -165,7 +163,6 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
   };
 
   return (
-    // Tidak perlu div pembungkus utama jika sudah ada di modal parent
     <>
       {message.text && (
         <div className={`mb-6 p-4 rounded-lg ${
@@ -177,7 +174,6 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
         </div>
       )}
       <div className="space-y-6">
-        {/* Input Fundraiser ID */}
         <div>
           <label htmlFor="fundraiserId" className="block text-sm font-medium text-gray-700 mb-1">
             Fundraiser ID <span className="text-red-500">*</span>
@@ -197,8 +193,6 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
             <p className="mt-1 text-sm text-red-600">{errors.fundraiserId}</p>
           )}
         </div>
-
-        {/* Input Judul */}
         <div>
           <label htmlFor="judul" className="block text-sm font-medium text-gray-700 mb-1">
             Judul Kampanye <span className="text-red-500">*</span>
@@ -218,8 +212,6 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
             <p className="mt-1 text-sm text-red-600">{errors.judul}</p>
           )}
         </div>
-
-        {/* Input Target */}
         <div>
           <label htmlFor="target" className="block text-sm font-medium text-gray-700 mb-1">
             Target Dana (Rp) <span className="text-red-500">*</span>
@@ -245,8 +237,6 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
             <p className="mt-1 text-sm text-red-600">{errors.target}</p>
           )}
         </div>
-
-        {/* Input Deskripsi */}
         <div>
           <label htmlFor="deskripsi" className="block text-sm font-medium text-gray-700 mb-1">
             Deskripsi Kampanye <span className="text-red-500">*</span>
@@ -266,8 +256,6 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
             <p className="mt-1 text-sm text-red-600">{errors.deskripsi}</p>
           )}
         </div>
-
-        {/* Input File */}
         <div>
           <label htmlFor="buktiPenggalanganDana" className="block text-sm font-medium text-gray-700 mb-1">
             Bukti Penggalangan Dana (Opsional)
@@ -294,8 +282,6 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
                <p className="mt-1 text-xs text-gray-500">File terpilih: {file.name}</p>
           )}
         </div>
-
-        {/* Tombol Submit */}
         <div className="flex justify-end pt-4">
           <button
             type="submit"
