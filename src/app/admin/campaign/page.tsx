@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import UserCampaignTable from './components/UserCampaignTable';
+import CampaignTable from './components/CampaignTable';
 
-export default function UserCampaignPage() {
+export default function CampaignPage() {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Kampanye Saya</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">Daftar Kampanye</h1>
 
         <div className="flex gap-3">
           <Link href="/dashboard">
@@ -31,7 +31,7 @@ export default function UserCampaignPage() {
         </div>
       </div>
 
-      <UserCampaignTable />
+      <CampaignTable />
     </div>
   );
 }

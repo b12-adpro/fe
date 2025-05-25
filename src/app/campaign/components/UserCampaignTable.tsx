@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import DonationHistoryPerCampaign from '.././donations/component/DonationHistoryPerCampaign';
-import AddCampaignForm from './CampaignForm';
+import DonationHistoryPerCampaign from '../../admin/campaign/donations/component/DonationHistoryPerCampaign'; // Pastikan path ini benar
+import AddCampaignForm from './CampaignForm'; // Impor form Anda
 import { EyeIcon, PencilSquareIcon, PlusCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 
@@ -17,19 +17,19 @@ interface CampaignDTO {
   datetime: string;
   status: 'PENDING' | 'ACTIVE' | 'INACTIVE';
   deskripsi: string;
-  buktiPenggalanganDana: string | null; 
+  buktiPenggalanganDana: string | null; // Diubah agar bisa null, sesuai kode Anda sebelumnya
 }
 
 interface FundUsageProofDTO {
   id: number;
-  campaignId: number;
+  campaignId: number; // Dalam kode Anda ini number, di CampaignDTO campaignId adalah string
   title: string;
   description: string;
   amount: number;
   submittedAt: string;
 }
 
-export default function CampaignPage() {
+export default function UserCampaignTable() {
   const [campaigns, setCampaigns] = useState<CampaignDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +44,7 @@ export default function CampaignPage() {
   const [isProofsModalOpen, setIsProofsModalOpen] = useState(false);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
 
-
+  // State untuk modal Add Campaign (sudah ada di kode Anda)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const fetchCampaigns = useCallback(async () => {
@@ -77,7 +77,8 @@ export default function CampaignPage() {
     fetchCampaigns();
   }, [fetchCampaigns]);
 
-  const fetchFundUsageProofs = async (campaignId: string) => {
+  // Pastikan campaignId yang dikirim ke backend sesuai (string UUID atau number)
+  const fetchFundUsageProofs = async (campaignId: string | number) => {
     setProofsLoading(true);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/campaigns/${campaignId}/fund-usage-proofs`);
@@ -111,13 +112,6 @@ export default function CampaignPage() {
     return null;
   };
 
-  // fundProofsChartData tidak lagi digunakan di JSX yang Anda berikan, tapi saya biarkan jika Anda membutuhkannya nanti
-  // const fundProofsChartData = fundProofs.map((proof) => ({
-  //   name: proof.title,
-  //   amount: proof.amount || 0,
-  //   description: proof.description,
-  // }));
-
   const openEditModal = (campaign: CampaignDTO) => {
     setSelectedCampaign({...campaign});
     setIsEditModalOpen(true);
@@ -132,13 +126,12 @@ export default function CampaignPage() {
   const openProofsModal = async (campaign: CampaignDTO) => {
     setSelectedCampaign({...campaign});
     setIsProofsModalOpen(true);
-    await fetchFundUsageProofs(campaign.campaignId);
+    await fetchFundUsageProofs(campaign.campaignId); // Menggunakan campaignId dari DTO (string)
   };
 
   const closeProofsModal = () => {
     setIsProofsModalOpen(false);
     setSelectedCampaign(null);
-    // setFundProofs([]); // Data akan di-fetch ulang saat modal dibuka
   };
 
   const openDonationModal = (campaign: CampaignDTO) => {
@@ -151,9 +144,11 @@ export default function CampaignPage() {
     setSelectedCampaign(null);
   };
 
+  // Fungsi untuk modal Add Campaign (sudah ada di kode Anda)
   const openAddModal = () => setIsAddModalOpen(true);
   const closeAddModal = () => setIsAddModalOpen(false);
 
+  // Callback setelah campaign dibuat (sudah ada di kode Anda)
   const handleCampaignCreated = () => {
       fetchCampaigns();
       closeAddModal();
@@ -196,14 +191,11 @@ export default function CampaignPage() {
   const filteredCampaigns = Array.isArray(campaigns) ? campaigns.filter((campaign) => {
     const verificationMatch =
       verificationFilter === 'ALL' || campaign.status === verificationFilter;
-    // Logika filter progress status Anda dari kode asli:
-    // Ini tampaknya mencoba memetakan 'status' ke 'progressStatus' yang lebih umum
-    // Anda mungkin ingin menyederhanakan ini atau membuatnya lebih eksplisit
     const progressMatch =
       progressFilter === 'ALL' ||
       (progressFilter === 'UPCOMING' && campaign.status === 'PENDING') ||
       (progressFilter === 'ACTIVE' && campaign.status === 'ACTIVE') ||
-      (progressFilter === 'COMPLETED' && campaign.status === 'INACTIVE'); // INACTIVE mungkin tidak selalu COMPLETED
+      (progressFilter === 'COMPLETED' && campaign.status === 'INACTIVE');
     return verificationMatch && progressMatch;
   }) : [];
 
@@ -212,7 +204,7 @@ export default function CampaignPage() {
     if (!dateString) return '-';
     try {
         const date = new Date(dateString);
-        return date.toLocaleDateString('id-ID', { // Menggunakan format Indonesia
+        return date.toLocaleDateString('id-ID', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -229,12 +221,6 @@ export default function CampaignPage() {
     return amount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
   }
 
-  // chartData tidak digunakan di JSX, jadi saya biarkan
-  // const chartData = Array.isArray(campaigns) ? campaigns.map((campaign) => ({
-  //   name: campaign.judul,
-  //   target: campaign.target,
-  //   currentAmount: campaign.currentAmount,
-  // })) : [];
 
   if (loading) return <p className="text-center py-10">Memuat kampanye...</p>;
   if (error) return <p className="text-red-500 text-center py-10">Error: {error}</p>;
@@ -242,6 +228,7 @@ export default function CampaignPage() {
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
+      {/* PENAMBAHAN TOMBOL "BUAT KAMPANYE BARU" DI SINI */}
       <div className="sm:flex sm:items-center sm:justify-between mb-8">
             <div>
                 <h1 className="text-2xl font-bold leading-tight text-gray-900">Manajemen Kampanye (Admin)</h1>
@@ -252,7 +239,7 @@ export default function CampaignPage() {
             <div className="mt-4 sm:mt-0">
                 <button
                     type="button"
-                    onClick={openAddModal}
+                    onClick={openAddModal} // Menggunakan fungsi yang sudah ada
                     className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
                     <PlusCircleIcon className="-ml-0.5 mr-2 h-5 w-5" aria-hidden="true" />
@@ -318,11 +305,11 @@ export default function CampaignPage() {
                   <td className="py-3 px-4">
                     <span
                       className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        campaign.status === 'ACTIVE' // Assuming ACTIVE means VERIFIED for verification status
+                        campaign.status === 'ACTIVE'
                           ? 'bg-green-100 text-green-700'
                           : campaign.status === 'PENDING'
                           ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800' // INACTIVE could mean REJECTED
+                          : 'bg-red-100 text-red-800'
                       }`}
                     >
                       {campaign.status === 'ACTIVE' ? 'Terverifikasi' : campaign.status}
@@ -332,13 +319,13 @@ export default function CampaignPage() {
                      <span
                         className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         campaign.status === 'ACTIVE'
-                            ? 'bg-blue-100 text-blue-700' // Active progress
+                            ? 'bg-blue-100 text-blue-700'
                             : campaign.status === 'PENDING'
-                            ? 'bg-purple-100 text-purple-700' // Pending can be upcoming
-                            : 'bg-gray-100 text-gray-700' // Inactive can be completed/inactive
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-gray-100 text-gray-700'
                         }`}
                     >
-                        {campaign.status}
+                        {campaign.status === 'ACTIVE' ? 'Aktif' : campaign.status === 'PENDING' ? 'Akan Datang' : 'Selesai'}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-center">
@@ -486,6 +473,25 @@ export default function CampaignPage() {
                   <p className="text-sm text-gray-500">Tidak ada dokumen bukti tersedia.</p>
                 )}
               </div>
+              {/* Jika Anda memiliki chart untuk FundUsageProofDTO dan ingin menampilkannya di sini:
+              {proofsLoading ? (
+                 <p>Memuat bukti penggunaan dana...</p>
+               ) : fundProofs.length === 0 ? (
+                 <p>Tidak ada bukti penggunaan dana untuk kampanye ini.</p>
+               ) : (
+                  <div className="min-w-[600px]">
+                       <ResponsiveContainer width="100%" height={300}>
+                         <LineChart data={fundProofs.map(proof => ({ name: proof.title, date: formatDate(proof.submittedAt), amount: proof.amount || 0, description: proof.description }))} >
+                             <CartesianGrid strokeDasharray="3 3" />
+                             <XAxis dataKey="date" />
+                             <YAxis />
+                             <Tooltip content={<CustomTooltip />} />
+                             <Line type="monotone" dataKey="amount" stroke="#4f46e5" strokeWidth={3} activeDot={{ r: 6 }} />
+                         </LineChart>
+                       </ResponsiveContainer>
+                   </div>
+               )}
+              */}
               <div className="mt-6 flex justify-end">
                 <button
                   type="button"
@@ -499,6 +505,7 @@ export default function CampaignPage() {
           </div>
         )}
 
+      {/* PENAMBAHAN MODAL UNTUK AddCampaignForm DI SINI */}
       {isAddModalOpen && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">

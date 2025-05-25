@@ -14,7 +14,7 @@ export default function AllDonationsPage() {
   const fetchDonations = async () => {
     try {
       setIsRefreshing(true);
-      const res = await fetch('http://localhost:8080/admin/donation-history');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/donation-history`);
       
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);

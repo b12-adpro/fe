@@ -2,12 +2,13 @@
 import React, { useState } from 'react';
 
 export interface DonationHistoryDTO {
-  id: number;
-  campaignId: string;
-  campaignTitle: string;
+  id: string;           
+  campaignId: string;   
+  donaturId: string;    
   donaturName: string;
-  amount: number;
-  donatedAt: string;
+  campaignTitle: string;
+  amount: number;     
+  donatedAt: string;   
 }
 
 interface Props {
@@ -22,10 +23,11 @@ const DonationHistoryTable: React.FC<Props> = ({ donations }) => {
   const itemsPerPage = 5;
   
   // Filtering
-  const filteredDonations = donations.filter((donation) => 
-    donation.campaignTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    donation.donaturName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredDonations = donations.filter((donation) => {
+    const campaignTitleMatch = donation?.campaignTitle?.toLowerCase()?.includes(searchTerm.toLowerCase()) ?? false;
+    const donaturNameMatch = donation?.donaturName?.toLowerCase()?.includes(searchTerm.toLowerCase()) ?? false;
+    return campaignTitleMatch || donaturNameMatch;
+  });
   
   // Sorting
   const sortedDonations = [...filteredDonations].sort((a, b) => {

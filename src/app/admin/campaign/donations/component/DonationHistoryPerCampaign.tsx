@@ -24,7 +24,7 @@ export default function DonationHistoryPerCampaign({ campaignId }: { campaignId:
     const fetchDonations = async () => {
       try {
         console.log("Campaign ID from query:", campaignId);
-        const response = await fetch(`http://localhost:8080/admin/donation-history/campaign/${campaignId}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/donation-history/campaign/${campaignId}`);
         if (response.ok) {
           const data = await response.json();
           const donationList = Array.isArray(data) ? data : [];
