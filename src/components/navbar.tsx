@@ -16,7 +16,7 @@ type AuthState = {
 const useAuth = (): AuthState => {
   return {
     isLoggedIn: true,
-    role: "User", 
+    role: "Admin", 
     username: "John Doe",
   }
 }
@@ -85,11 +85,12 @@ const Navbar = () => {
             ) : role === "Admin" ? (
               // Admin navigation
               <>
-                <NavLink href="/dashboard">Dashboard</NavLink>
-                <NavLink href="/users">Users</NavLink>
-                <NavLink href="/notifications">Notifications</NavLink>
+                <NavLink href="/admin/dashboard">Dashboard</NavLink>
+                <NavLink href="/admin/campaign">Campaign</NavLink>
+                <NavLink href="/admin/donation">Donation</NavLink>
+                <NavLink href="/admin/users">Users</NavLink>
+                <NavLink href="/admin/notifications">Notifications</NavLink>
                 <div className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-600">Welcome, {username}</span>
                   <button
                     onClick={handleLogout}
                     className="px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"

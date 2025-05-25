@@ -33,7 +33,6 @@ export default function CampaignStatusChart({ stats }: { stats: CampaignStats })
         </Link>
       </div>
 
-      {/* Summary boxes */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         {data.map((item, index) => (
           <div key={index} className="bg-gray-50 p-3 rounded-lg border border-gray-100">

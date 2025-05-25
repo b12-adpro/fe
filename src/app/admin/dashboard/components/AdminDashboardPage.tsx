@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import CampaignStatusChart from './CampaignStatusChart';
-import UserRoleChart from './UserRoleChart';
+import UserChart from './UserChart';
 import PlatformStatsPieChart from './PlatformStatsPieChart';
 import Link from 'next/link';
 
@@ -28,7 +28,7 @@ export default function AdminDashboardPage() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:8080/admin/dashboard/stats');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/dashboard/stats`);
         
         if (!response.ok) {
           throw new Error('Gagal memuat data dashboard');
@@ -110,7 +110,7 @@ export default function AdminDashboardPage() {
             <CampaignStatusChart stats={stats} />
           </div>
           <div className="lg:col-span-1">
-            <UserRoleChart stats={stats} />
+            <UserChart stats={stats} />
           </div>
         </div>
 
