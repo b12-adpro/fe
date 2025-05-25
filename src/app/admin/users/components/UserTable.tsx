@@ -45,12 +45,10 @@ export default function UserTable() {
   useEffect(() => {
     let result = users;
     
-    // Apply role filter
     if (filterRole !== 'all') {
       result = result.filter(user => user.role === filterRole);
     }
     
-    // Apply search filter
     if (searchTerm) {
       result = result.filter(user => 
         user.name.toLowerCase().includes(searchTerm.toLowerCase())

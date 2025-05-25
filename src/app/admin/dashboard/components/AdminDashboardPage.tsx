@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import CampaignStatusChart from './CampaignStatusChart';
-import UserRoleChart from './UserRoleChart';
+import UserChart from './UserChart';
 import PlatformStatsPieChart from './PlatformStatsPieChart';
 import Link from 'next/link';
 
@@ -110,7 +110,7 @@ export default function AdminDashboardPage() {
             <CampaignStatusChart stats={stats} />
           </div>
           <div className="lg:col-span-1">
-            <UserRoleChart stats={stats} />
+            <UserChart stats={stats} />
           </div>
         </div>
 

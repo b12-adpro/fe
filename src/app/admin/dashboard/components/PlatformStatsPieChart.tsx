@@ -4,14 +4,12 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 
 interface PlatformStats {
   totalCampaigns: number;
-  totalDonations: number;
   totalUsers: number;
 }
 
-const COLORS = ['#4F46E5', '#10B981', '#F59E0B'];
+const COLORS = ['#4F46E5', '#10B981'];
 const RADIAN = Math.PI / 180;
 
-// Custom label dengan persentase
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }: any) => {
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -35,10 +33,8 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 export default function PlatformStatsPieChart({ stats }: { stats: PlatformStats }) {
   const data = [
     { name: 'Total Kampanye', value: stats.totalCampaigns },
-    { name: 'Total Donasi', value: stats.totalDonations },
     { name: 'Total Pengguna', value: stats.totalUsers },
   ];
-
   const totalValue = data.reduce((sum, item) => sum + item.value, 0);
 
   return (
@@ -46,8 +42,7 @@ export default function PlatformStatsPieChart({ stats }: { stats: PlatformStats 
       <div className="flex flex-col h-full">
         <h3 className="text-xl font-semibold mb-4 text-gray-800">Statistik Platform</h3>
         
-        {/* Card untuk summary data */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           {data.map((item, index) => (
             <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-100">
               <div className="flex items-center mb-1">
@@ -62,7 +57,6 @@ export default function PlatformStatsPieChart({ stats }: { stats: PlatformStats 
           ))}
         </div>
         
-        {/* Chart */}
         <div className="flex-grow">
           <ResponsiveContainer width="100%" height="100%" minHeight={300}>
             <PieChart>
@@ -77,7 +71,7 @@ export default function PlatformStatsPieChart({ stats }: { stats: PlatformStats 
                 fill="#8884d8"
                 labelLine={false}
                 label={renderCustomizedLabel}
-              >
+                >
                 {data.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
@@ -85,7 +79,7 @@ export default function PlatformStatsPieChart({ stats }: { stats: PlatformStats 
               <Tooltip 
                 formatter={(value: number) => [value.toLocaleString(), 'Jumlah']}
                 contentStyle={{ borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', border: 'none' }}
-              />
+                />
               <Legend layout="horizontal" verticalAlign="bottom" align="center" />
             </PieChart>
           </ResponsiveContainer>

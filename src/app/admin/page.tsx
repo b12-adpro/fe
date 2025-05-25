@@ -1,14 +1,13 @@
-// app/page.tsx
-'use client';  // Menandakan ini adalah client-side component
+'use client'; 
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';  // Gunakan useRouter dari next/navigation
+import { useRouter } from 'next/navigation';  
 
 export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/admin/dashboard'); // Redirect ke dashboard
+    router.push('/admin/dashboard');
   }, [router]);
 
   return <div>Redirecting to Dashboard...</div>;
