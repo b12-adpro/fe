@@ -73,7 +73,7 @@ export const TopUpModal = ({ isOpen, onClose, onTopUp }: TopUpModalProps) => {
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="10000"
+                placeholder="Minimum Top Up: 10000"
                 className="pl-12"
                 min="10000"
               />
