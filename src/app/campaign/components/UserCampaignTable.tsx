@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import DonationHistoryPerCampaign from '../../admin/campaign/donations/component/DonationHistoryPerCampaign'; // Pastikan path ini benar
-import AddCampaignForm from './CampaignForm'; // Impor form Anda
+import AddCampaignForm from './CampaignForm'; 
+import EditCampaignForm from './UpdateCampaign'; // Import komponen untuk edit
 import { EyeIcon, PencilSquareIcon, PlusCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 
 
 interface CampaignDTO {
@@ -17,12 +19,12 @@ interface CampaignDTO {
   datetime: string;
   status: 'PENDING' | 'ACTIVE' | 'INACTIVE';
   deskripsi: string;
-  buktiPenggalanganDana: string | null; // Diubah agar bisa null, sesuai kode Anda sebelumnya
+  buktiPenggalanganDana: string | null; 
 }
 
 interface FundUsageProofDTO {
   id: number;
-  campaignId: number; // Dalam kode Anda ini number, di CampaignDTO campaignId adalah string
+  campaignId: number;
   title: string;
   description: string;
   amount: number;
@@ -37,8 +39,6 @@ export default function UserCampaignTable() {
   const [progressFilter, setProgressFilter] = useState<string>('ALL');
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignDTO | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [updateLoading, setUpdateLoading] = useState(false);
-  const [updateMessage, setUpdateMessage] = useState({ text: '', type: '' });
   const [fundProofs, setFundProofs] = useState<FundUsageProofDTO[]>([]);
   const [proofsLoading, setProofsLoading] = useState(false);
   const [isProofsModalOpen, setIsProofsModalOpen] = useState(false);
@@ -51,12 +51,12 @@ export default function UserCampaignTable() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/campaigns`);
+      const response = await fetch(`http://3.211.204.60/api/campaign/all`);
       if (!response.ok) {
         throw new Error(`Gagal mengambil data: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Fetched campaigns (Admin):', data);
+      console.log('Fetched campaigns:', data);
       if (Array.isArray(data)) {
         setCampaigns(data);
       } else {
@@ -77,25 +77,6 @@ export default function UserCampaignTable() {
     fetchCampaigns();
   }, [fetchCampaigns]);
 
-  // Pastikan campaignId yang dikirim ke backend sesuai (string UUID atau number)
-  const fetchFundUsageProofs = async (campaignId: string | number) => {
-    setProofsLoading(true);
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/campaigns/${campaignId}/fund-usage-proofs`);
-      if (response.ok) {
-        const data = await response.json();
-        setFundProofs(data);
-      } else {
-        console.error('Failed to fetch fund usage proofs');
-        setFundProofs([]);
-      }
-    } catch (error) {
-      console.error('Error fetching fund usage proofs:', error);
-      setFundProofs([]);
-    } finally {
-      setProofsLoading(false);
-    }
-  };
 
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
@@ -120,18 +101,11 @@ export default function UserCampaignTable() {
   const closeEditModal = () => {
     setIsEditModalOpen(false);
     setSelectedCampaign(null);
-    setUpdateMessage({ text: '', type: '' });
   };
 
-  const openProofsModal = async (campaign: CampaignDTO) => {
-    setSelectedCampaign({...campaign});
-    setIsProofsModalOpen(true);
-    await fetchFundUsageProofs(campaign.campaignId); // Menggunakan campaignId dari DTO (string)
-  };
-
-  const closeProofsModal = () => {
-    setIsProofsModalOpen(false);
-    setSelectedCampaign(null);
+  const handleCampaignUpdated = () => {
+    fetchCampaigns();
+    closeEditModal();
   };
 
   const openDonationModal = (campaign: CampaignDTO) => {
@@ -144,49 +118,14 @@ export default function UserCampaignTable() {
     setSelectedCampaign(null);
   };
 
-  // Fungsi untuk modal Add Campaign (sudah ada di kode Anda)
   const openAddModal = () => setIsAddModalOpen(true);
   const closeAddModal = () => setIsAddModalOpen(false);
 
-  // Callback setelah campaign dibuat (sudah ada di kode Anda)
   const handleCampaignCreated = () => {
       fetchCampaigns();
       closeAddModal();
   };
 
-  const handleVerify = async (approve: boolean) => {
-    if (!selectedCampaign) return;
-
-    setUpdateLoading(true);
-    setUpdateMessage({ text: '', type: '' });
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/campaigns/${selectedCampaign.campaignId}/verify?approve=${approve}`, {
-        method: 'PUT',
-      });
-
-      if (response.ok) {
-        const updatedCampaign = await response.json();
-        setCampaigns(prevCampaigns => prevCampaigns.map(c => c.campaignId === updatedCampaign.campaignId ? updatedCampaign : c));
-        setUpdateMessage({
-          text: approve ? 'Kampanye berhasil diverifikasi!' : 'Kampanye berhasil ditolak!',
-          type: 'success'
-        });
-
-        setTimeout(() => {
-          closeEditModal();
-        }, 1500);
-      } else {
-        const errorData = await response.json().catch(() => ({message: "Gagal memperbarui status."}));
-        setUpdateMessage({ text: errorData.message || 'Gagal memperbarui kampanye', type: 'error' });
-      }
-    } catch (error) {
-      console.error('Error updating campaign:', error);
-      setUpdateMessage({ text: 'Terjadi kesalahan saat memperbarui', type: 'error' });
-    } finally {
-      setUpdateLoading(false);
-    }
-  };
 
   const filteredCampaigns = Array.isArray(campaigns) ? campaigns.filter((campaign) => {
     const verificationMatch =
@@ -228,18 +167,17 @@ export default function UserCampaignTable() {
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-      {/* PENAMBAHAN TOMBOL "BUAT KAMPANYE BARU" DI SINI */}
       <div className="sm:flex sm:items-center sm:justify-between mb-8">
             <div>
-                <h1 className="text-2xl font-bold leading-tight text-gray-900">Manajemen Kampanye (Admin)</h1>
+                <h1 className="text-2xl font-bold leading-tight text-gray-900">Kampanye</h1>
                 <p className="mt-1 text-sm text-gray-600">
-                    Verifikasi, kelola, dan buat kampanye penggalangan dana.
+                    Melihat, kelola, dan buat kampanye penggalangan dana.
                 </p>
             </div>
             <div className="mt-4 sm:mt-0">
                 <button
                     type="button"
-                    onClick={openAddModal} // Menggunakan fungsi yang sudah ada
+                    onClick={openAddModal}
                     className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
                     <PlusCircleIcon className="-ml-0.5 mr-2 h-5 w-5" aria-hidden="true" />
@@ -253,7 +191,7 @@ export default function UserCampaignTable() {
           <label htmlFor="verificationFilter" className="block text-sm font-medium text-gray-700 mb-1">Filter Status Verifikasi:</label>
           <select
             id="verificationFilter"
-            value={verificationFilter}
+            value={verificationFilter}  
             onChange={(e) => setVerificationFilter(e.target.value)}
             className="border rounded px-3 py-2 text-sm w-full sm:w-auto"
           >
@@ -288,6 +226,7 @@ export default function UserCampaignTable() {
               <th className="py-3 px-4 text-left">Target</th>
               <th className="py-3 px-4 text-left hidden sm:table-cell">Terkumpul</th>
               <th className="py-3 px-4 text-left hidden lg:table-cell">Dibuat</th>
+              <th className="py-3 px-4 text-left hidden lg:table-cell">Deskripsi</th>
               <th className="py-3 px-4 text-left">Status Verifikasi</th>
               <th className="py-3 px-4 text-left">Status Progres</th>
               <th className="py-3 px-4 text-center">Aksi</th>
@@ -298,10 +237,11 @@ export default function UserCampaignTable() {
               filteredCampaigns.map((campaign) => (
                 <tr key={campaign.campaignId} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="py-3 px-4 font-medium text-gray-800">{campaign.judul}</td>
-                  <td className="py-3 px-4 hidden md:table-cell">{campaign.fundraiserName || '-'}</td>
+                  <td className="py-3 px-4 hidden md:table-cell">{campaign.fundraiserId || '-'}</td>
                   <td className="py-3 px-4">{formatCurrency(campaign.target)}</td>
                   <td className="py-3 px-4 hidden sm:table-cell">{formatCurrency(campaign.currentAmount)}</td>
                   <td className="py-3 px-4 hidden lg:table-cell">{formatDate(campaign.datetime)}</td>
+                  <td className="py-3 px-4 hidden lg:table-cell">{campaign.deskripsi}</td>
                   <td className="py-3 px-4">
                     <span
                       className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -330,19 +270,13 @@ export default function UserCampaignTable() {
                   </td>
                   <td className="py-3 px-4 text-center">
                     <div className="flex items-center justify-center space-x-2">
-                      {campaign.status === 'PENDING' && (
-                        <button
-                          onClick={() => openEditModal(campaign)}
-                          className="text-indigo-600 hover:text-indigo-900" title="Verifikasi"
-                        >
-                           <PencilSquareIcon className="w-5 h-5"/>
-                        </button>
-                      )}
+                      {/* CHANGED: Menggunakan button untuk modal, bukan Link */}
                       <button
-                        onClick={() => openProofsModal(campaign)}
-                        className="text-teal-600 hover:text-teal-900" title="Bukti Penggunaan Dana"
+                        onClick={() => openEditModal(campaign)}
+                        className="text-blue-600 hover:text-blue-900" 
+                        title="Update Kampanye"
                       >
-                        <EyeIcon className="w-5 h-5"/>
+                        <PencilSquareIcon className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => openDonationModal(campaign)}
@@ -356,7 +290,7 @@ export default function UserCampaignTable() {
               ))
             ) : (
               <tr>
-                <td colSpan={8} className="py-8 text-center text-gray-500">
+                <td colSpan={9} className="py-8 text-center text-gray-500">
                   Tidak ada kampanye yang ditemukan.
                 </td>
               </tr>
@@ -364,64 +298,6 @@ export default function UserCampaignTable() {
           </tbody>
         </table>
       </div>
-
-      {isEditModalOpen && selectedCampaign && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-             <div className="flex justify-between items-center mb-6 pb-3 border-b">
-                <h2 className="text-xl font-semibold">Verifikasi Kampanye</h2>
-                <button onClick={closeEditModal} className="text-gray-400 hover:text-gray-600">
-                    <XMarkIcon className="h-6 w-6" />
-                </button>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700">Judul Kampanye:</label>
-              <p className="mt-1 p-2 border rounded-md bg-gray-50 text-sm">{selectedCampaign.judul}</p>
-            </div>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700">Status Saat Ini:</label>
-              <p className="mt-1">
-                <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                  PENDING
-                </span>
-              </p>
-            </div>
-
-            {updateMessage.text && (
-              <div className={`mb-4 p-3 rounded-md text-sm ${
-                updateMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-              }`}>
-                {updateMessage.text}
-              </div>
-            )}
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={closeEditModal}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => handleVerify(false)}
-                className="px-4 py-2 bg-red-600 text-white rounded-md shadow-sm text-sm font-medium hover:bg-red-700 disabled:opacity-50"
-                disabled={updateLoading}
-              >
-                Tolak
-              </button>
-              <button
-                type="button"
-                onClick={() => handleVerify(true)}
-                className="px-4 py-2 bg-green-600 text-white rounded-md shadow-sm text-sm font-medium hover:bg-green-700 disabled:opacity-50"
-                disabled={updateLoading}
-              >
-                {updateLoading ? 'Memproses...' : 'Setujui (Aktifkan)'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {isDonationModalOpen && selectedCampaign && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
@@ -446,66 +322,6 @@ export default function UserCampaignTable() {
         </div>
       )}
 
-      {isProofsModalOpen && selectedCampaign && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-6 pb-3 border-b">
-                <h2 className="text-xl font-semibold">Bukti Penggalangan Dana - {selectedCampaign.judul}</h2>
-                <button onClick={closeProofsModal} className="text-gray-400 hover:text-gray-600">
-                  <XMarkIcon className="h-6 w-6" />
-                </button>
-              </div>
-              <div className="mb-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Detail Kampanye:</h3>
-                <p className="text-sm text-gray-700 mb-1">Target: {formatCurrency(selectedCampaign.target)}</p>
-                <p className="text-sm text-gray-700 mb-4">Terkumpul: {formatCurrency(selectedCampaign.currentAmount)}</p>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Dokumen Bukti:</h3>
-                {selectedCampaign.buktiPenggalanganDana ? (
-                  <a
-                    href={selectedCampaign.buktiPenggalanganDana}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-600 hover:text-indigo-800 underline"
-                  >
-                    Lihat Dokumen Bukti
-                  </a>
-                ) : (
-                  <p className="text-sm text-gray-500">Tidak ada dokumen bukti tersedia.</p>
-                )}
-              </div>
-              {/* Jika Anda memiliki chart untuk FundUsageProofDTO dan ingin menampilkannya di sini:
-              {proofsLoading ? (
-                 <p>Memuat bukti penggunaan dana...</p>
-               ) : fundProofs.length === 0 ? (
-                 <p>Tidak ada bukti penggunaan dana untuk kampanye ini.</p>
-               ) : (
-                  <div className="min-w-[600px]">
-                       <ResponsiveContainer width="100%" height={300}>
-                         <LineChart data={fundProofs.map(proof => ({ name: proof.title, date: formatDate(proof.submittedAt), amount: proof.amount || 0, description: proof.description }))} >
-                             <CartesianGrid strokeDasharray="3 3" />
-                             <XAxis dataKey="date" />
-                             <YAxis />
-                             <Tooltip content={<CustomTooltip />} />
-                             <Line type="monotone" dataKey="amount" stroke="#4f46e5" strokeWidth={3} activeDot={{ r: 6 }} />
-                         </LineChart>
-                       </ResponsiveContainer>
-                   </div>
-               )}
-              */}
-              <div className="mt-6 flex justify-end">
-                <button
-                  type="button"
-                  onClick={closeProofsModal}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Tutup
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-      {/* PENAMBAHAN MODAL UNTUK AddCampaignForm DI SINI */}
       {isAddModalOpen && (
           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
@@ -517,6 +333,25 @@ export default function UserCampaignTable() {
                             </button>
                         </div>
                         <AddCampaignForm onSuccess={handleCampaignCreated} />
+                   </div>
+              </div>
+          </div>
+      )}
+
+      {isEditModalOpen && selectedCampaign && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
+                   <div className="p-6">
+                        <div className="flex justify-between items-center mb-6 pb-3 border-b">
+                            <h2 className="text-2xl font-semibold text-gray-900">Update Kampanye</h2>
+                            <button onClick={closeEditModal} className="text-gray-400 hover:text-gray-600">
+                                <XMarkIcon className="h-6 w-6" />
+                            </button>
+                        </div>
+                        <EditCampaignForm 
+                            campaignData={selectedCampaign} 
+                            onSuccess={handleCampaignUpdated} 
+                        />
                    </div>
               </div>
           </div>
