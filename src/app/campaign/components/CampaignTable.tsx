@@ -99,7 +99,7 @@ export default function CampaignPage() {
     
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/campaigns/${selectedCampaign.campaignId}/verify?approve=${approve}`, {
-        method: 'POST',
+        method: 'PUT',
       });
       
       if (response.ok) {
