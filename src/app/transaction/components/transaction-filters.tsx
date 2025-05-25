@@ -13,6 +13,7 @@ export const TransactionFilters = ({ activeFilter, onFilterChange, userRole }: T
     { id: "all", label: "All Transactions" },
     { id: "donation", label: "Donations" },
     { id: "topup", label: "Top Ups" },
+    { id: "withdrawals", label: "Withdrawal" },
   ]
 
   const fundraiserTabs = [{ id: "withdrawals", label: "Withdrawals" }]

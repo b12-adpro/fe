@@ -114,7 +114,7 @@ export const TransactionList = ({
                   </div>
                 </td>
                 <td className={`px-6 py-4 whitespace-nowrap font-medium ${getTransactionColor(transaction.type)}`}>
-                  {transaction.type === "TOP_UP" ? "+ " : "- "}
+                  {transaction.type === "DONATION" ? "- " : "+ "}
                   Rp {formatCurrency(transaction.amount)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">{formatDate(transaction.timestamp)}</td>
