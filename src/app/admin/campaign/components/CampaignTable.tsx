@@ -18,7 +18,7 @@ interface CampaignDTO {
   buktiPenggalanganDana: string;
 }
 
-export default function CampaignTable() {
+export default function CampaignPage() {
   const [campaigns, setCampaigns] = useState<CampaignDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [verificationFilter, setVerificationFilter] = useState<string>('ALL');
@@ -29,7 +29,10 @@ export default function CampaignTable() {
   const [updateMessage, setUpdateMessage] = useState({ text: '', type: '' });
   const [isProofsModalOpen, setIsProofsModalOpen] = useState(false);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
 
   const fetchCampaigns = useCallback(async () => {
     setLoading(true);
@@ -55,7 +58,7 @@ export default function CampaignTable() {
         setCampaigns(data);
       } else {
         console.error('Fetched campaigns data is not an array:', data);
-        setCampaigns([]);
+        setCampaigns([]); 
       }
     } catch (error) {
       console.error('Error fetching campaigns:', error);
@@ -108,31 +111,23 @@ export default function CampaignTable() {
     setSelectedCampaign(campaign);
     setIsDonationModalOpen(true);
   };
-
+  
   const closeDonationModal = () => {
     setIsDonationModalOpen(false);
     setSelectedCampaign(null);
   };
 
-  const openAddModal = () => setIsAddModalOpen(true);
-  const closeAddModal = () => setIsAddModalOpen(false);
-
-  const handleCampaignCreated = () => {
-      fetchCampaigns();
-      closeAddModal();
-  };
-
   const handleVerify = async (approve: boolean) => {
     if (!selectedCampaign) return;
-
+    
     setUpdateLoading(true);
     setUpdateMessage({ text: '', type: '' });
-
+    
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/campaigns/${selectedCampaign.campaignId}/verify?approve=${approve}`, {
         method: 'PUT',
       });
-
+      
       if (response.ok) {
         const updatedCampaign = await response.json();
         setCampaigns(campaigns.map(c => c.campaignId === updatedCampaign.campaignId ? updatedCampaign : c));
@@ -140,7 +135,7 @@ export default function CampaignTable() {
           text: approve ? 'Campaign verified successfully!' : 'Campaign rejected successfully!', 
           type: 'success' 
         });
-
+        
         setTimeout(() => {
           closeEditModal();
         }, 1500);
@@ -185,34 +180,15 @@ export default function CampaignTable() {
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="sm:flex sm:items-center sm:justify-between mb-6">
-            <div>
-                <h1 className="text-2xl font-bold leading-tight text-gray-900">Manajemen Kampanye</h1>
-                <p className="mt-1 text-sm text-gray-600">
-                    Lihat dan kelola semua kampanye penggalangan dana.
-                </p>
-            </div>
-            <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-                <button
-                    type="button"
-                    onClick={openAddModal}
-                    className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
-                >
-                    <PlusCircleIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                    Buat Kampanye Baru
-                </button>
-            </div>
-        </div>
-
       <div className="flex flex-wrap gap-4 mb-6">
         <div>
-          <label className="block font-semibold mb-1">Filter Status Verifikasi:</label>
+          <label className="block font-semibold mb-1">Filter Verification Status:</label>
           <select
             value={verificationFilter}
             onChange={(e) => setVerificationFilter(e.target.value)}
             className="border rounded px-3 py-1"
           >
-            <option value="ALL">Semua</option>
+            <option value="ALL">All</option>
             <option value="PENDING">Pending</option>
             <option value="ACTIVE">Verified</option>
             <option value="INACTIVE">Rejected</option>
@@ -220,16 +196,16 @@ export default function CampaignTable() {
         </div>
 
         <div>
-          <label className="block font-semibold mb-1">Filter Status Progres:</label>
+          <label className="block font-semibold mb-1">Filter Progress Status:</label>
           <select
             value={progressFilter}
             onChange={(e) => setProgressFilter(e.target.value)}
             className="border rounded px-3 py-1"
           >
-            <option value="ALL">Semua</option>
-            <option value="PENDING">Pending</option>
-            <option value="ACTIVE">Aktif</option>
-            <option value="INACTIVE">Tidak Aktif</option>
+            <option value="ALL">All</option>
+            <option value="UPCOMING">Upcoming</option>
+            <option value="ACTIVE">Active</option>
+            <option value="COMPLETED">Completed</option>
           </select>
         </div>
       </div>
@@ -237,7 +213,7 @@ export default function CampaignTable() {
         <table className="w-full table-auto border-collapse">
           <thead>
             <tr className="bg-gray-100 text-gray-600 text-sm leading-normal">
-              <th className="py-3 px-4 text-left">Judul</th>
+              <th className="py-3 px-4 text-left">Title</th>
               <th className="py-3 px-4 text-left">Fundraiser</th>
               <th className="py-3 px-4 text-left">Target</th>
               <th className="py-3 px-4 text-left">Current</th>
@@ -323,7 +299,7 @@ export default function CampaignTable() {
             ) : (
               <tr>
                 <td colSpan={9} className="py-8 text-center text-gray-500">
-                  Tidak ada kampanye yang ditemukan
+                  No campaigns found
                 </td>
               </tr>
             )}
@@ -331,30 +307,32 @@ export default function CampaignTable() {
         </table>
       </div>
 
+
+      {/* Edit Modal */}
       {isEditModalOpen && selectedCampaign && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-w-full">
-             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Verifikasi Kampanye</h2>
-                <button onClick={closeEditModal} className="text-gray-500 hover:text-gray-700">
-                    <XMarkIcon className="h-6 w-6" />
-                </button>
-            </div>
+            <h2 className="text-xl font-bold mb-4">Verify Campaign</h2>
+            
             <div className="mb-4">
               <label className="block font-semibold mb-1">Campaign Title:</label>
               <p className="border px-3 py-2 rounded bg-gray-100">{selectedCampaign.judul}</p>
             </div>
+            
             <div className="mb-4">
-              <label className="block font-semibold mb-1">Status Saat Ini:</label>
+              <label className="block font-semibold mb-1">Current Status:</label>
               <p className="px-3 py-2">
                 <span className="px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-700">
                   PENDING
                 </span>
               </p>
             </div>
+
+            <p className="mb-4">Do you want to approve this campaign?</p>
             <p className="mb-6 text-sm text-gray-600">
-              Apakah Anda ingin menyetujui kampanye ini?
+              When approved, this campaign will be set to VERIFIED status.
             </p>
+
             {updateMessage.text && (
               <div className={`mb-4 p-2 rounded ${
                 updateMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -362,13 +340,14 @@ export default function CampaignTable() {
                 {updateMessage.text}
               </div>
             )}
+
             <div className="flex justify-end gap-2 mt-6">
               <button
                 type="button"
                 onClick={closeEditModal}
                 className="px-4 py-2 border rounded hover:bg-gray-100"
               >
-                Batal
+                Cancel
               </button>
               <button
                 type="button"
@@ -376,7 +355,7 @@ export default function CampaignTable() {
                 className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
                 disabled={updateLoading}
               >
-                Tolak
+                Reject
               </button>
               <button
                 type="button"
@@ -384,7 +363,7 @@ export default function CampaignTable() {
                 className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
                 disabled={updateLoading}
               >
-                {updateLoading ? 'Memproses...' : 'Setujui'}
+                {updateLoading ? 'Processing...' : 'Approve'}
               </button>
             </div>
           </div>
@@ -414,13 +393,14 @@ export default function CampaignTable() {
                 onClick={closeDonationModal}
                 className="px-4 py-2 border rounded hover:bg-gray-100"
               >
-                Tutup
+                Close
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* Fund Usage Proofs Modal */}
       {isProofsModalOpen && selectedCampaign && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-4xl max-h-[90vh] overflow-y-auto">

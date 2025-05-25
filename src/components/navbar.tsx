@@ -16,7 +16,7 @@ type AuthState = {
 const useAuth = (): AuthState => {
   return {
     isLoggedIn: true,
-    role: "Admin", 
+    role: "User", 
     username: "John Doe",
   }
 }
@@ -103,7 +103,6 @@ const Navbar = () => {
               // User navigation
               <>
                 <NavLink href="/campaign">Campaigns</NavLink>
-                <NavLink href="/my-campaign">My Campaigns</NavLink>
                 <NavLink href="/donation">Donations</NavLink>
                 <NavLink href="/wallet">Wallet</NavLink>
                 <NavLink href="/profile">Profile</NavLink>

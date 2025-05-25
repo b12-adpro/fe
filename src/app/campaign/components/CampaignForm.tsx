@@ -6,7 +6,6 @@ interface CampaignFormData {
   target: number;
   deskripsi: string;
   buktiPenggalanganDana: string;
-  fundraiserId: string;
 }
 
 interface AddCampaignFormProps {
@@ -14,12 +13,11 @@ interface AddCampaignFormProps {
 }
 
 export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
-  const [formData, setFormData] = useState<CampaignFormData>({
+  const [formData, setFormData] = useState<Omit<CampaignFormData, 'fundraiserId'>>({
     judul: '',
     target: 0,
     deskripsi: '',
     buktiPenggalanganDana: '',
-    fundraiserId: ''
   });
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,9 +36,6 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
     }
     if (!formData.deskripsi.trim()) {
       newErrors.deskripsi = 'Deskripsi kampanye wajib diisi';
-    }
-    if (!formData.fundraiserId.trim()) {
-      newErrors.fundraiserId = 'Fundraiser ID wajib diisi';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -68,7 +63,7 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
       uploadData.append('file', selectedFile);
 
       try {
-          const response = await fetch('http://localhost:8080/api/campaign/upload/bukti', {
+          const response = await fetch('http://3.211.204.60/api/campaign/upload/bukti', { 
               method: 'POST',
               body: uploadData,
           });
@@ -118,17 +113,19 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
     setLoading(true);
     setMessage({ text: '', type: '' });
 
+    const dummyFundraiserId = "123e4567-e89b-12d3-a456-426614174000";
+
     const dataToSend = {
       judul: formData.judul,
       target: formData.target,
       deskripsi: formData.deskripsi,
       buktiPenggalanganDana: formData.buktiPenggalanganDana,
-      fundraiserId: formData.fundraiserId,
+      fundraiserId: dummyFundraiserId, 
       datetime: new Date().toISOString()
     };
 
     try {
-      const response = await fetch('http://localhost:8080/api/campaign/', {
+      const response = await fetch('http://3.211.204.60/api/campaign/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,7 +135,7 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
 
       if (response.ok) {
         setMessage({ text: `Kampanye berhasil dibuat!`, type: 'success' });
-        setFormData({ judul: '', target: 0, deskripsi: '', buktiPenggalanganDana: '', fundraiserId: '' });
+        setFormData({ judul: '', target: 0, deskripsi: '', buktiPenggalanganDana: '' }); 
         setFile(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
@@ -174,25 +171,8 @@ export default function AddCampaignForm({ onSuccess }: AddCampaignFormProps) {
         </div>
       )}
       <div className="space-y-6">
-        <div>
-          <label htmlFor="fundraiserId" className="block text-sm font-medium text-gray-700 mb-1">
-            Fundraiser ID <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="fundraiserId"
-            name="fundraiserId"
-            value={formData.fundraiserId}
-            onChange={handleInputChange}
-            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-              errors.fundraiserId ? 'border-red-500' : 'border-gray-300'
-            }`}
-            placeholder="Masukkan UUID Fundraiser (misal: a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11)"
-          />
-          {errors.fundraiserId && (
-            <p className="mt-1 text-sm text-red-600">{errors.fundraiserId}</p>
-          )}
-        </div>
+        {/* Input Fundraiser ID DIHAPUS */}
+
         <div>
           <label htmlFor="judul" className="block text-sm font-medium text-gray-700 mb-1">
             Judul Kampanye <span className="text-red-500">*</span>
