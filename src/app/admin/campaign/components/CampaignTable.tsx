@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import DonationHistoryPerCampaign from '.././donations/component/DonationHistoryPerCampaign';
+import DonationHistoryPerCampaign from '../donations/component/DonationHistoryPerCampaign';
 
 interface CampaignDTO {
   campaignId: string;
