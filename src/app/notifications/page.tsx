@@ -19,7 +19,7 @@ export default function NotificationsPage() {
     const fetchNotifications = async () => {
       try {
         setLoading(true);
-        const response = await fetch('https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/notifications');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/notifications`);
         
         if (!response.ok) {
           throw new Error('Gagal mengambil data notifikasi');

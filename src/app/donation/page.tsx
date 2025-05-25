@@ -14,7 +14,7 @@ export default function AllDonationsPage() {
   const fetchDonations = async () => {
     try {
       setIsRefreshing(true);
-      const res = await fetch('https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/donation-history');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/donation-history`);
       
       if (!res.ok) {
         throw new Error(`Error: ${res.status} ${res.statusText}`);

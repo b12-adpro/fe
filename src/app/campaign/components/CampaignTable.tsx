@@ -2,28 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import DonationHistoryPerCampaign from '.././donations/component/DonationHistoryPerCampaign';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts'
 
 interface CampaignDTO {
-  id: number;
+  campaignId: string;
   fundraiserId: string;
-  fundraiserName: string;
-  title: string;
-  targetAmount: number;
+  fundraiserName: string | null;
+  judul: string;
+  target: number;
   currentAmount: number;
-  startDate: string;
-  endDate: string;
-  verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
-  progressStatus: 'UPCOMING' | 'ACTIVE' | 'COMPLETED';
-}
-
-interface FundUsageProofDTO {
-  id: number;
-  campaignId: number;
-  title: string;
-  description: string;
-  amount: number;
-  submittedAt: string;
+  datetime: string;
+  status: 'PENDING' | 'ACTIVE' | 'INACTIVE';
+  deskripsi: string;
+  buktiPenggalanganDana: string;
 }
 
 export default function CampaignPage() {
@@ -35,8 +25,6 @@ export default function CampaignPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [updateMessage, setUpdateMessage] = useState({ text: '', type: '' });
-  const [fundProofs, setFundProofs] = useState<FundUsageProofDTO[]>([]);
-  const [proofsLoading, setProofsLoading] = useState(false);
   const [isProofsModalOpen, setIsProofsModalOpen] = useState(false);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
 
@@ -47,7 +35,7 @@ export default function CampaignPage() {
   const fetchCampaigns = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/campaigns');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/campaigns`);
       const data = await response.json();
       console.log('Fetched campaigns:', data); 
       setCampaigns(data);
@@ -57,26 +45,6 @@ export default function CampaignPage() {
       setLoading(false);
     }
   };
-
-  const fetchFundUsageProofs = async (campaignId: number) => {
-    setProofsLoading(true);
-    try {
-      const response = await fetch(`https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/campaigns/${campaignId}/fund-usage-proofs`);
-      if (response.ok) {
-        const data = await response.json();
-        setFundProofs(data);
-      } else {
-        console.error('Failed to fetch fund usage proofs');
-        setFundProofs([]);
-      }
-    } catch (error) {
-      console.error('Error fetching fund usage proofs:', error);
-      setFundProofs([]);
-    } finally {
-      setProofsLoading(false);
-    }
-  };
-
   
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
     if (active && payload && payload.length) {
@@ -91,12 +59,6 @@ export default function CampaignPage() {
     }
     return null;
   };
-
-  const fundProofsChartData = fundProofs.map((proof) => ({
-    name: proof.title,
-    amount: proof.amount || 0,
-    description: proof.description,
-  }));
   
   const openEditModal = (campaign: CampaignDTO) => {
     setSelectedCampaign({...campaign});
@@ -112,13 +74,11 @@ export default function CampaignPage() {
   const openProofsModal = async (campaign: CampaignDTO) => {
     setSelectedCampaign({...campaign});
     setIsProofsModalOpen(true);
-    await fetchFundUsageProofs(campaign.id);
   };
 
   const closeProofsModal = () => {
     setIsProofsModalOpen(false);
     setSelectedCampaign(null);
-    setFundProofs([]);
   };
 
   const openDonationModal = (campaign: CampaignDTO) => {
@@ -138,13 +98,13 @@ export default function CampaignPage() {
     setUpdateMessage({ text: '', type: '' });
     
     try {
-      const response = await fetch(`https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/campaigns/${selectedCampaign.id}/verify?approve=${approve}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/campaigns/${selectedCampaign.campaignId}/verify?approve=${approve}`, {
         method: 'POST',
       });
       
       if (response.ok) {
         const updatedCampaign = await response.json();
-        setCampaigns(campaigns.map(c => c.id === updatedCampaign.id ? updatedCampaign : c));
+        setCampaigns(campaigns.map(c => c.campaignId === updatedCampaign.campaignId ? updatedCampaign : c));
         setUpdateMessage({ 
           text: approve ? 'Campaign verified successfully!' : 'Campaign rejected successfully!', 
           type: 'success' 
@@ -166,22 +126,27 @@ export default function CampaignPage() {
   };
 
   const filteredCampaigns = campaigns.filter((campaign) => {
-    const verificationMatch =
-      verificationFilter === 'ALL' || campaign.verificationStatus === verificationFilter;
-    const progressMatch =
-      progressFilter === 'ALL' || campaign.progressStatus === progressFilter;
-    return verificationMatch && progressMatch;
-  });
+  const verificationMatch =
+    verificationFilter === 'ALL' || campaign.status === verificationFilter;
+  const progressMatch =
+    progressFilter === 'ALL' || 
+    (campaign.status === progressFilter && campaign.status === 'ACTIVE');
+  return verificationMatch && progressMatch;
+});
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   const chartData = campaigns.map((campaign) => ({
-    name: campaign.title,
-    targetAmount: campaign.targetAmount,
+    name: campaign.judul,
+    target: campaign.target,
     currentAmount: campaign.currentAmount,
   }));
 
@@ -199,8 +164,8 @@ export default function CampaignPage() {
           >
             <option value="ALL">All</option>
             <option value="PENDING">Pending</option>
-            <option value="VERIFIED">Verified</option>
-            <option value="REJECTED">Rejected</option>
+            <option value="ACTIVE">Verified</option>
+            <option value="INACTIVE">Rejected</option>
           </select>
         </div>
 
@@ -227,7 +192,6 @@ export default function CampaignPage() {
               <th className="py-3 px-4 text-left">Target</th>
               <th className="py-3 px-4 text-left">Current</th>
               <th className="py-3 px-4 text-left">Start</th>
-              <th className="py-3 px-4 text-left">End</th>
               <th className="py-3 px-4 text-left">Verification</th>
               <th className="py-3 px-4 text-left">Progress</th>
               <th className="py-3 px-4 text-right">Aksi</th>
@@ -236,71 +200,74 @@ export default function CampaignPage() {
           <tbody className="text-gray-600 text-sm">
             {filteredCampaigns.length > 0 ? (
               filteredCampaigns.map((campaign) => (
-                <tr key={campaign.id} className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="py-3 px-4">{campaign.title}</td>
+                <tr key={campaign.campaignId} className="border-b border-gray-200 hover:bg-gray-50">
+                  <td className="py-3 px-4">{campaign.judul}</td>
                   <td className="py-3 px-4">{campaign.fundraiserName}</td>
-                  <td className="py-3 px-4">{campaign.targetAmount}</td>
+                  <td className="py-3 px-4">{campaign.target}</td>
                   <td className="py-3 px-4">{campaign.currentAmount}</td>
-                  <td className="py-3 px-4">{formatDate(campaign.startDate)}</td>
-                  <td className="py-3 px-4">{formatDate(campaign.endDate)}</td>
+                  <td className="py-3 px-4">{formatDate(campaign.datetime)}</td>
                   <td className="py-3 px-4">
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${
-                        campaign.verificationStatus === 'VERIFIED'
+                        campaign.status === 'ACTIVE'
                           ? 'bg-green-100 text-green-700'
-                          : campaign.verificationStatus === 'PENDING'
+                          : campaign.status === 'PENDING'
                           ? 'bg-yellow-100 text-yellow-700'
                           : 'bg-red-100 text-red-700'
                       }`}
                     >
-                      {campaign.verificationStatus}
+                      {campaign.status === 'ACTIVE' ? 'Verified' : 
+                      campaign.status === 'INACTIVE' ? 'Rejected' : 
+                      'Pending'}
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    {campaign.verificationStatus === 'VERIFIED' ? (
+                    {campaign.status === 'ACTIVE' ? (
                       <span
                         className={`px-2 py-1 rounded-full text-xs ${
-                          campaign.progressStatus === 'ACTIVE'
+                          campaign.status === 'ACTIVE'
                             ? 'bg-blue-100 text-blue-700'
-                            : campaign.progressStatus === 'UPCOMING'
+                            : campaign.status === 'PENDING'
                             ? 'bg-purple-100 text-purple-700'
                             : 'bg-gray-100 text-gray-700'
                         }`}
                       >
-                        {campaign.progressStatus}
+                        {campaign.status === 'ACTIVE' ? 'Active' :
+                        campaign.status === 'PENDING' ? 'Upcoming' :
+                        'Completed'}
                       </span>
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                    {campaign.verificationStatus === 'PENDING' && (
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end space-x-2">
+                        {campaign.status === 'PENDING' && (
+                            <button
+                              onClick={() => openEditModal(campaign)}
+                              className="px-3 py-1 rounded-md text-white text-xs bg-blue-500 hover:bg-blue-600"
+                            >
+                              Verify
+                            </button>
+                          )}
                         <button
-                          onClick={() => openEditModal(campaign)}
-                          className="px-3 py-1 rounded-md text-white text-xs bg-blue-500 hover:bg-blue-600"
+                          onClick={() => openProofsModal(campaign)}
+                          className={`px-3 py-1 rounded-md text-white text-xs ${
+                            campaign.status === 'ACTIVE'
+                              ? 'bg-green-600 hover:bg-green-700'
+                              : 'bg-gray-400'
+                          }`}
                         >
-                          Verify
+                          Proofs
                         </button>
-                      )}
-                      <button
-                        onClick={() => openProofsModal(campaign)}
-                        className={`px-3 py-1 rounded-md text-white text-xs ${
-                          campaign.progressStatus === 'ACTIVE' || campaign.progressStatus === 'COMPLETED'
-                            ? 'bg-green-600 hover:bg-green-700'
-                            : 'bg-gray-400'
-                        }`}
-                      >
-                        Proofs
-                      </button>
-                      <button
-                        onClick={() => openDonationModal(campaign)}
-                        className="px-3 py-1 rounded-md text-white bg-purple-600 hover:bg-purple-700 text-xs"
-                      >
-                        Donations
-                      </button>
-                    </div>
-                  </td>
+                        <button
+                          onClick={() => openDonationModal(campaign)}
+                          className="px-3 py-1 rounded-md text-white bg-purple-600 hover:bg-purple-700 text-xs"
+                        >
+                          Donations
+                        </button>
+                      </div>
+                    </td>
                 </tr>
               ))
             ) : (
@@ -323,7 +290,7 @@ export default function CampaignPage() {
             
             <div className="mb-4">
               <label className="block font-semibold mb-1">Campaign Title:</label>
-              <p className="border px-3 py-2 rounded bg-gray-100">{selectedCampaign.title}</p>
+              <p className="border px-3 py-2 rounded bg-gray-100">{selectedCampaign.judul}</p>
             </div>
             
             <div className="mb-4">
@@ -381,7 +348,7 @@ export default function CampaignPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Donation History - {selectedCampaign.title}</h2>
+              <h2 className="text-xl font-bold">Donation History - {selectedCampaign.judul}</h2>
               <button 
                 onClick={closeDonationModal}
                 className="text-gray-500 hover:text-gray-700"
@@ -392,7 +359,7 @@ export default function CampaignPage() {
               </button>
             </div>
             
-            <DonationHistoryPerCampaign campaignId={selectedCampaign.id.toString()} />
+            <DonationHistoryPerCampaign campaignId={selectedCampaign.campaignId.toString()} />
             
             <div className="mt-6 flex justify-end">
               <button
@@ -409,88 +376,52 @@ export default function CampaignPage() {
 
       {/* Fund Usage Proofs Modal */}
       {isProofsModalOpen && selectedCampaign && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Fund Usage Proofs - {selectedCampaign.title}</h2>
-              <button 
-                onClick={closeProofsModal}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            {proofsLoading ? (
-              <div className="flex justify-center items-center h-40">
-                <p>Loading proofs...</p>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-4xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Campaign Proof - {selectedCampaign.judul}</h2>
+                <button 
+                  onClick={closeProofsModal}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-            ) : fundProofs.length === 0 ? (
-              <div className="text-center py-10">
-                <p className="text-gray-500">No fund usage proofs found for this campaign.</p>
+              
+              <div className="mb-6">
+                <h3 className="font-semibold mb-2">Campaign Details:</h3>
+                <p className="mb-2">Target Amount: ${selectedCampaign.target?.toLocaleString()}</p>
+                <p className="mb-4">Current Amount: ${selectedCampaign.currentAmount?.toLocaleString()}</p>
+                
+                <h3 className="font-semibold mb-2">Proof Document:</h3>
+                {selectedCampaign.buktiPenggalanganDana ? (
+                  <a 
+                    href={selectedCampaign.buktiPenggalanganDana}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    View Campaign Proof Document
+                  </a>
+                ) : (
+                  <p className="text-gray-500">No proof document available</p>
+                )}
               </div>
-            ) : (
-              <div className="mb-6 overflow-x-auto">
-                <div className="min-w-[600px]">
-                    <h3 className="font-semibold mb-2">
-                      Current Amount: ${selectedCampaign.currentAmount?.toLocaleString()} &nbsp;
-                      | Target Amount: ${selectedCampaign.targetAmount?.toLocaleString()}
-                    </h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart
-                        data={fundProofs.map(proof => ({
-                          name: proof.title,
-                          date: formatDate(proof.submittedAt),
-                          amount: proof.amount || 0,
-                          description: proof.description
-                        }))}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip
-                          content={({ active, payload, label }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload;
-                              return (
-                                <div className="bg-white p-3 border rounded shadow text-sm max-w-xs break-words">
-                                  <p className="font-bold mb-1">{data.name}</p>
-                                  <p>{data.description}</p>
-                                  <p className="text-blue-600">Amount: ${data.amount.toLocaleString()}</p>
-                                  <p className="text-gray-500">Submitted: {label}</p>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                          <Line 
-                            type="monotone" 
-                            dataKey="amount" 
-                            stroke="#4f46e5" 
-                            strokeWidth={3}
-                            activeDot={{ r: 6 }} 
-                          />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-            )}
-            
-            <div className="mt-6 flex justify-end">
-              <button
-                type="button"
-                onClick={closeProofsModal}
-                className="px-4 py-2 border rounded hover:bg-gray-100"
-              >
-                Close
-              </button>
+              
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={closeProofsModal}
+                  className="px-4 py-2 border rounded hover:bg-gray-100"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }

@@ -28,7 +28,7 @@ export default function AdminDashboardPage() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await fetch('https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/dashboard/stats');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/dashboard/stats`);
         
         if (!response.ok) {
           throw new Error('Gagal memuat data dashboard');

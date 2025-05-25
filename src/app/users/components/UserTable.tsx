@@ -27,7 +27,7 @@ export default function UserTable() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch('https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/users');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/users`);
       const data = await res.json();
       setUsers(data);
       setFilteredUsers(data);
@@ -62,7 +62,7 @@ export default function UserTable() {
 
   const handleBlock = async (id: string, status: boolean) => {
     try {
-      await fetch(`https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/users/${id}/block?status=${status}`, { method: 'POST' });
+      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/users/${id}/block?status=${status}`, { method: 'POST' });
       fetchUsers();
     } catch (error) {
       console.error('Error blocking user:', error);
@@ -73,7 +73,7 @@ export default function UserTable() {
   const handleDelete = async (id: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) {
       try {
-        await fetch(`https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/users/${id}`, { method: 'DELETE' });
+        await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/users/${id}`, { method: 'DELETE' });
         fetchUsers();
       } catch (error) {
         console.error('Error deleting user:', error);
@@ -84,7 +84,7 @@ export default function UserTable() {
 
   const handleSendNotification = async () => {
     try {
-      const response = await fetch('https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/notifications', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/notifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: notifTitle, message: notifMessage }),
@@ -107,7 +107,7 @@ export default function UserTable() {
   const handleViewDonations = async (donaturId: string, userName: string) => {
     try {
       setSelectedUserName(userName);
-      const res = await fetch(`https://yielding-kendra-tk-adpro-12-72b281e5.koyeb.app/admin/donation-history/donatur/${donaturId}`, { method: 'GET' });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/donation-history/donatur/${donaturId}`, { method: 'GET' });
       const data = await res.json();
       setDonationHistory(data);
       setShowDonationModal(true);
