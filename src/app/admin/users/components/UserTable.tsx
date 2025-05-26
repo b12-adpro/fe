@@ -6,7 +6,6 @@ import { Search, Bell, UserCheck, UserX, Trash2, FileText, RefreshCcw } from 'lu
 interface UserDTO {
   id: string;
   name: string;
-  role: 'FUNDRAISER' | 'DONATUR';
   blocked: boolean;
 }
 
@@ -45,10 +44,6 @@ export default function UserTable() {
   useEffect(() => {
     let result = users;
     
-    if (filterRole !== 'all') {
-      result = result.filter(user => user.role === filterRole);
-    }
-    
     if (searchTerm) {
       result = result.filter(user => 
         user.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -57,28 +52,6 @@ export default function UserTable() {
     
     setFilteredUsers(result);
   }, [searchTerm, filterRole, users]);
-
-  const handleBlock = async (id: string, status: boolean) => {
-    try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/users/${id}/block?status=${status}`, { method: 'POST' });
-      fetchUsers();
-    } catch (error) {
-      console.error('Error blocking user:', error);
-      alert('Gagal memblokir user');
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) {
-      try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/users/${id}`, { method: 'DELETE' });
-        fetchUsers();
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        alert('Gagal menghapus user');
-      }
-    }
-  };
 
   const handleSendNotification = async () => {
     try {
@@ -94,7 +67,16 @@ export default function UserTable() {
         setNotifTitle('');
         setNotifMessage('');
       } else {
-        alert('Gagal mengirim notifikasi');
+        const errorData = await response.json();
+          if (errorData.errors) {
+            const messages = errorData.errors.map((e: {field: string, message: string}) => `${e.field}: ${e.message}`).join('\n');
+            alert(`Gagal mengirim notifikasi1:\n${messages}`);
+          } else if (errorData.message) {
+            alert(`Gagal mengirim notifikasi2: ${errorData.message}`);
+          } else {
+            alert('Gagal mengirim notifikasi');
+          }
+          return;
       }
     } catch (error) {
       console.error('Error:', error);
@@ -188,29 +170,19 @@ export default function UserTable() {
         <>
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 gap-4">
                 <div className="flex items-center">
-                <h2 className="text-xl font-semibold">Daftar Pengguna</h2>
+                  <h2 className="text-xl font-semibold">Daftar Pengguna</h2>
                 </div>
                 <div className="flex flex-col md:flex-row gap-4">
-                <div className="relative">
-                    <input
-                    type="text"
-                    className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Cari pengguna..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-                </div>
-                
-                <select
-                    className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={filterRole}
-                    onChange={(e) => setFilterRole(e.target.value)}
-                >
-                    <option value="all">Semua Role</option>
-                    <option value="FUNDRAISER">Fundraiser</option>
-                    <option value="DONATUR">Donatur</option>
-                </select>
+                  <div className="relative">
+                      <input
+                      type="text"
+                      className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Cari pengguna..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                      <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                  </div>
                 </div>
             </div>
 
@@ -219,7 +191,6 @@ export default function UserTable() {
               <thead>
                 <tr className="bg-gray-100 text-gray-600 text-sm leading-normal">
                   <th className="py-3 px-4 text-left">Nama</th>
-                  <th className="py-3 px-4 text-left">Role</th>
                   <th className="py-3 px-4 text-left">Status</th>
                   <th className="py-3 px-4 text-right">Aksi</th>
                 </tr>
@@ -229,11 +200,6 @@ export default function UserTable() {
                   filteredUsers.map((user) => (
                     <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50">
                       <td className="py-3 px-4">{user.name}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-xs ${user.role === 'FUNDRAISER' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
-                          {user.role}
-                        </span>
-                      </td>
                       <td className="py-3 px-4">
                         {user.blocked ? (
                           <span className="flex items-center text-red-600">
@@ -248,33 +214,11 @@ export default function UserTable() {
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
                             <button
-                                onClick={() => handleBlock(user.id, !user.blocked)}
-                                className={`px-3 py-1 rounded-md text-white text-xs flex items-center ${user.blocked ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-500 hover:bg-yellow-600'}`}
-                            >
-                                {user.blocked ? (
-                                <>
-                                    <UserCheck size={14} className="mr-1" /> Unblock
-                                </>
-                                ) : (
-                                <>
-                                    <UserX size={14} className="mr-1" /> Block
-                                </>
-                                )}
-                            </button>
-                          
-                            <button
                                 onClick={() => handleViewDonations(user.id, user.name)}
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-xs flex items-center"
                             >
                                 <FileText size={14} className="mr-1" /> Donasi
                             </button>
-                          
-                            <button
-                                onClick={() => handleDelete(user.id)}
-                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-xs flex items-center"
-                            >
-                            <Trash2 size={14} className="mr-1" /> Hapus
-                          </button>
                         </div>
                       </td>
                     </tr>

@@ -47,7 +47,7 @@ export default function AllDonationsPage() {
           
           <div className="flex gap-3">
             <button
-              onClick={() => router.push('/campaign')}
+              onClick={() => router.push('/admin/campaign')}
               className="px-4 py-2 flex items-center gap-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

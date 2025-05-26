@@ -6,7 +6,6 @@ import DonationHistoryPerCampaign from '../donations/component/DonationHistoryPe
 interface CampaignDTO {
   campaignId: string;
   fundraiserId: string;
-  fundraiserName: string | null;
   judul: string;
   target: number;
   currentAmount: number;
@@ -125,14 +124,15 @@ export default function CampaignPage() {
     }
   };
 
-  const filteredCampaigns = campaigns.filter((campaign) => {
-  const verificationMatch =
-    verificationFilter === 'ALL' || campaign.status === verificationFilter;
-  const progressMatch =
-    progressFilter === 'ALL' || 
-    (campaign.status === progressFilter && campaign.status === 'ACTIVE');
-  return verificationMatch && progressMatch;
-});
+  const filteredCampaigns = Array.isArray(campaigns)
+  ? campaigns.filter((campaign) => {
+      const verificationMatch =
+        verificationFilter === 'ALL' || campaign.status === verificationFilter;
+      const progressMatch =
+        progressFilter === 'ALL' || campaign.status === progressFilter;
+      return verificationMatch && progressMatch;
+    })
+  : [];
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '-';
@@ -144,11 +144,11 @@ export default function CampaignPage() {
     });
   };
 
-  const chartData = campaigns.map((campaign) => ({
+  const chartData = Array.isArray(campaigns) ? campaigns.map((campaign) => ({
     name: campaign.judul,
     target: campaign.target,
     currentAmount: campaign.currentAmount,
-  }));
+  })) : [];
 
   if (loading) return <p className="text-center">Loading campaigns...</p>;
 
@@ -188,7 +188,6 @@ export default function CampaignPage() {
           <thead>
             <tr className="bg-gray-100 text-gray-600 text-sm leading-normal">
               <th className="py-3 px-4 text-left">Title</th>
-              <th className="py-3 px-4 text-left">Fundraiser</th>
               <th className="py-3 px-4 text-left">Target</th>
               <th className="py-3 px-4 text-left">Current</th>
               <th className="py-3 px-4 text-left">Start</th>
@@ -202,7 +201,6 @@ export default function CampaignPage() {
               filteredCampaigns.map((campaign) => (
                 <tr key={campaign.campaignId} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="py-3 px-4">{campaign.judul}</td>
-                  <td className="py-3 px-4">{campaign.fundraiserName}</td>
                   <td className="py-3 px-4">{campaign.target}</td>
                   <td className="py-3 px-4">{campaign.currentAmount}</td>
                   <td className="py-3 px-4">{formatDate(campaign.datetime)}</td>
@@ -236,7 +234,11 @@ export default function CampaignPage() {
                         campaign.status === 'PENDING' ? 'Upcoming' :
                         'Completed'}
                       </span>
-                    ) : (
+                    ) : campaign.status === 'PENDING' ? (
+                        <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">
+                          Upcoming
+                        </span>
+                    ):(
                       <span className="text-gray-400">-</span>
                     )}
                   </td>

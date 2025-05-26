@@ -18,7 +18,7 @@ export default function UserChart({ stats }: { stats: StatsProps }) {
           <p className="text-sm text-gray-500 mt-1">pengguna terdaftar</p>
         </div>       
         <Link
-          href="/users"
+          href="/admin/users"
           className="text-sm px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium flex items-center"
         >
           Lihat Semua
