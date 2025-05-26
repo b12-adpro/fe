@@ -45,20 +45,6 @@ export default function CampaignPage() {
     }
   };
   
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-white p-3 border rounded shadow max-w-xs">
-          <p className="font-semibold">{label}</p>
-          <p className="text-sm text-gray-700">{data.description}</p>
-          <p className="mt-1 text-blue-600 font-medium">💸 Amount: ${data.amount.toLocaleString()}</p>
-        </div>
-      );
-    }
-    return null;
-  };
-  
   const openEditModal = (campaign: CampaignDTO) => {
     setSelectedCampaign({...campaign});
     setIsEditModalOpen(true);
@@ -143,12 +129,6 @@ export default function CampaignPage() {
       day: 'numeric'
     });
   };
-
-  const chartData = Array.isArray(campaigns) ? campaigns.map((campaign) => ({
-    name: campaign.judul,
-    target: campaign.target,
-    currentAmount: campaign.currentAmount,
-  })) : [];
 
   if (loading) return <p className="text-center">Loading campaigns...</p>;
 

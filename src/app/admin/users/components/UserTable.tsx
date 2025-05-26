@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Bell, UserCheck, UserX, Trash2, FileText, RefreshCcw } from 'lucide-react';
+import { Search, Bell, UserCheck, UserX, FileText } from 'lucide-react';
 
 interface UserDTO {
   id: string;
@@ -9,16 +9,22 @@ interface UserDTO {
   blocked: boolean;
 }
 
+interface DonationHistoryDTO {
+  campaignId: string;
+  campaignTitle: string;
+  amount: number;
+  date: string;
+}
+
 export default function UserTable() {
-  const [users, setUsers] = useState<UserDTO[]>([]);
+  const [, setUsers] = useState<UserDTO[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState<string>('all');
-  const [showModal, setShowModal] = useState(false);
+  const [, setShowModal] = useState(false);
   const [notifTitle, setNotifTitle] = useState('');
   const [notifMessage, setNotifMessage] = useState('');
-  const [donationHistory, setDonationHistory] = useState<any[]>([]);
+   const [donationHistory, setDonationHistory] = useState<DonationHistoryDTO[]>([]);
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [selectedUserName, setSelectedUserName] = useState('');
   const [selectedTab, setSelectedTab] = useState('users');
@@ -40,18 +46,6 @@ export default function UserTable() {
   useEffect(() => {
     fetchUsers();
   }, []);
-
-  useEffect(() => {
-    let result = users;
-    
-    if (searchTerm) {
-      result = result.filter(user => 
-        user.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    setFilteredUsers(result);
-  }, [searchTerm, filterRole, users]);
 
   const handleSendNotification = async () => {
     try {

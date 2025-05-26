@@ -9,7 +9,7 @@ export default function AllDonationsPage() {
   const [donations, setDonations] = useState<DonationHistoryDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [, setIsRefreshing] = useState(false);
 
   const fetchDonations = async () => {
     try {

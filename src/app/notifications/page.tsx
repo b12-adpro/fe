@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, Check, Loader2 } from 'lucide-react';
+import { Bell, Loader2 } from 'lucide-react';
 
 type Notification = {
   id: number;

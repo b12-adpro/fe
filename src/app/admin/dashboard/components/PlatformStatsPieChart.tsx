@@ -10,17 +10,20 @@ interface PlatformStats {
 const COLORS = ['#4F46E5', '#10B981'];
 const RADIAN = Math.PI / 180;
 
-const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }: any) => {
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+import { PieLabelRenderProps } from 'recharts';
 
+const renderCustomizedLabel = ({
+  cx = 0, cy = 0, midAngle = 0, innerRadius = 0, outerRadius = 0, percent = 0
+}: PieLabelRenderProps) => {
+  const radius = (+innerRadius + (+outerRadius - +innerRadius) * 0.5);
+  const x = (cx as number) + radius * Math.cos(-midAngle * RADIAN);
+  const y = (cy as number) + radius * Math.sin(-midAngle * RADIAN);
   return (
     <text 
       x={x} 
       y={y} 
       fill="white" 
-      textAnchor={x > cx ? 'start' : 'end'} 
+      textAnchor={x > (cx as number) ? 'start' : 'end'} 
       dominantBaseline="central"
       fontSize={14}
       fontWeight="medium"

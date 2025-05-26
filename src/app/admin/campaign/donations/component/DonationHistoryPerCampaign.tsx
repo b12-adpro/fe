@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface DonationHistoryDTO {
   id: number;
@@ -89,7 +88,14 @@ export default function DonationHistoryPerCampaign({ campaignId }: { campaignId:
   return (
     <div className="space-y-6">
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div className="overflow-x-auto">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-4">
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Donasi</h3>
+          <p className="text-2xl font-bold text-green-600">
+            Rp {totalAmount.toLocaleString('id-ID')}
+          </p>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
           <table className="w-full table-auto border-collapse border">
             <thead>
               <tr className="bg-gray-50">
