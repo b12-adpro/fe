@@ -1,13 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import DonationHistoryPerCampaign from '../../admin/campaign/donations/component/DonationHistoryPerCampaign'; // Pastikan path ini benar
-import AddCampaignForm from './CampaignForm'; 
-import EditCampaignForm from './UpdateCampaign'; // Import komponen untuk edit
-import { EyeIcon, PencilSquareIcon, PlusCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import DonationHistoryPerCampaign from '../../admin/campaign/donations/component/DonationHistoryPerCampaign';
+import AddCampaignForm from './CampaignForm';
+import EditCampaignForm from './UpdateCampaign';
+import { EyeIcon, PencilSquareIcon, PlusCircleIcon, XMarkIcon, TrashIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-
 
 interface CampaignDTO {
   campaignId: string;
@@ -19,16 +17,16 @@ interface CampaignDTO {
   datetime: string;
   status: 'PENDING' | 'ACTIVE' | 'INACTIVE';
   deskripsi: string;
-  buktiPenggalanganDana: string | null; 
+  buktiPenggalanganDana: string | null;
 }
 
 interface FundUsageProofDTO {
-  id: number;
-  campaignId: number;
-  title: string;
-  description: string;
-  amount: number;
-  submittedAt: string;
+    id: number;
+    campaignId: number;
+    title: string;
+    description: string;
+    amount: number;
+    submittedAt: string;
 }
 
 export default function UserCampaignTable() {
@@ -39,12 +37,7 @@ export default function UserCampaignTable() {
   const [progressFilter, setProgressFilter] = useState<string>('ALL');
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignDTO | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [fundProofs, setFundProofs] = useState<FundUsageProofDTO[]>([]);
-  const [proofsLoading, setProofsLoading] = useState(false);
-  const [isProofsModalOpen, setIsProofsModalOpen] = useState(false);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
-
-  // State untuk modal Add Campaign (sudah ada di kode Anda)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const fetchCampaigns = useCallback(async () => {
@@ -56,13 +49,9 @@ export default function UserCampaignTable() {
         throw new Error(`Gagal mengambil data: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Fetched campaigns:', data);
-      if (Array.isArray(data)) {
-        setCampaigns(data);
-      } else {
-        console.error("Data kampanye dari API (Admin) bukan array:", data);
-        setCampaigns([]);
-        setError("Format data kampanye tidak sesuai.");
+      setCampaigns(Array.isArray(data) ? data : []);
+      if (!Array.isArray(data)) {
+         setError("Format data kampanye tidak sesuai.");
       }
     } catch (error: any) {
       console.error('Error fetching campaigns (Admin):', error);
@@ -77,7 +66,73 @@ export default function UserCampaignTable() {
     fetchCampaigns();
   }, [fetchCampaigns]);
 
+  const handleDeleteCampaign = async (campaign: CampaignDTO) => {
+    if (campaign.status !== 'INACTIVE') {
+        alert("Kampanye hanya dapat dihapus jika statusnya 'INACTIVE'.");
+        return;
+    }
+    if (!window.confirm("Apakah Anda yakin ingin menghapus kampanye ini?")) {
+        return;
+    }
+    try {
+        const response = await fetch(`http://3.211.204.60/api/campaign/${campaign.campaignId}/delete`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            let errorMessage = `Gagal menghapus kampanye: ${response.status}`;
+             try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorMessage;
+            } catch (e) { }
+            throw new Error(errorMessage);
+        }
+        alert('Kampanye berhasil dihapus!');
+        fetchCampaigns();
+    } catch (error: any) {
+        console.error('Error deleting campaign:', error);
+        alert(`Error: ${error.message}`);
+    }
+  };
 
+  const handleChangeStatus = async (campaign: CampaignDTO) => {
+    if (campaign.status === 'PENDING') {
+        alert("Status 'PENDING' tidak dapat diubah dari sini.");
+        return;
+    }
+
+    const newStatus = campaign.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    const apiUrl = newStatus === 'ACTIVE'
+        ? `http://3.211.204.60/api/campaign/${campaign.campaignId}/activate`
+        : `http://3.211.204.60/api/campaign/${campaign.campaignId}/inactivate`;
+
+    if (!window.confirm(`Apakah Anda yakin ingin mengubah status menjadi '${newStatus}'?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            let errorMessage = `Gagal mengubah status: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorMessage;
+            } catch (e) { }
+            throw new Error(errorMessage);
+        }
+
+        alert('Status kampanye berhasil diubah!');
+        fetchCampaigns();
+    } catch (error: any) {
+        console.error('Error changing campaign status:', error);
+        alert(`Error: ${error.message}`);
+    }
+  };
 
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
     if (active && payload && payload.length) {
@@ -125,7 +180,6 @@ export default function UserCampaignTable() {
       fetchCampaigns();
       closeAddModal();
   };
-
 
   const filteredCampaigns = Array.isArray(campaigns) ? campaigns.filter((campaign) => {
     const verificationMatch =
@@ -191,7 +245,7 @@ export default function UserCampaignTable() {
           <label htmlFor="verificationFilter" className="block text-sm font-medium text-gray-700 mb-1">Filter Status Verifikasi:</label>
           <select
             id="verificationFilter"
-            value={verificationFilter}  
+            value={verificationFilter}
             onChange={(e) => setVerificationFilter(e.target.value)}
             className="border rounded px-3 py-2 text-sm w-full sm:w-auto"
           >
@@ -256,27 +310,50 @@ export default function UserCampaignTable() {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                     <span
-                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        campaign.status === 'ACTIVE'
-                            ? 'bg-blue-100 text-blue-700'
-                            : campaign.status === 'PENDING'
-                            ? 'bg-purple-100 text-purple-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}
-                    >
-                        {campaign.status === 'ACTIVE' ? 'Aktif' : campaign.status === 'PENDING' ? 'Akan Datang' : 'Selesai'}
-                    </span>
+                       <span
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            campaign.status === 'ACTIVE'
+                                ? 'bg-blue-100 text-blue-700'
+                                : campaign.status === 'PENDING'
+                                ? 'bg-purple-100 text-purple-700'
+                                : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                            {campaign.status === 'ACTIVE' ? 'Aktif' : campaign.status === 'PENDING' ? 'Akan Datang' : 'Selesai'}
+                        </span>
                   </td>
                   <td className="py-3 px-4 text-center">
                     <div className="flex items-center justify-center space-x-2">
-                      {/* CHANGED: Menggunakan button untuk modal, bukan Link */}
                       <button
                         onClick={() => openEditModal(campaign)}
-                        className="text-blue-600 hover:text-blue-900" 
+                        className="text-blue-600 hover:text-blue-900"
                         title="Update Kampanye"
                       >
                         <PencilSquareIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleChangeStatus(campaign)}
+                        className={`text-orange-600 hover:text-orange-900 ${
+                            campaign.status === 'PENDING' ? 'text-gray-400 cursor-not-allowed hover:text-gray-400' : ''
+                        }`}
+                        title={
+                            campaign.status === 'PENDING'
+                            ? "Status PENDING tidak bisa diubah"
+                            : `Ubah ke ${campaign.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'}`
+                        }
+                        disabled={campaign.status === 'PENDING'}
+                      >
+                        <ArrowPathIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCampaign(campaign)}
+                        className={`text-red-600 hover:text-red-900 ${
+                            campaign.status !== 'INACTIVE' ? 'text-gray-400 cursor-not-allowed hover:text-gray-400' : ''
+                        }`}
+                        title={campaign.status !== 'INACTIVE' ? "Hanya bisa hapus jika INACTIVE" : "Hapus Kampanye"}
+                        disabled={campaign.status !== 'INACTIVE'}
+                      >
+                        <TrashIcon className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => openDonationModal(campaign)}
@@ -348,9 +425,9 @@ export default function UserCampaignTable() {
                                 <XMarkIcon className="h-6 w-6" />
                             </button>
                         </div>
-                        <EditCampaignForm 
-                            campaignData={selectedCampaign} 
-                            onSuccess={handleCampaignUpdated} 
+                        <EditCampaignForm
+                            campaignData={selectedCampaign}
+                            onSuccess={handleCampaignUpdated}
                         />
                    </div>
               </div>
