@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { Clock, Target, Heart } from 'lucide-react';
+import { Clock, Target, Heart, History } from 'lucide-react';
 
 const donaturId = "8f7d6543-2e1a-9c8b-7f6e-5d4c3b2a1001";
 
@@ -163,14 +163,36 @@ export default function CampaignsPage() {
       {/* Header */}
       <header className="bg-blue-600 text-white shadow-lg">
         <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold">Platform Donasi Peduli</h1>
-          <p className="mt-2">Bantu sesama dengan donasi untuk kampanye yang bermakna</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">Platform Donasi Peduli</h1>
+              <p className="mt-2">Bantu sesama dengan donasi untuk kampanye yang bermakna</p>
+            </div>
+            <button
+              onClick={() => window.location.href = '/donation'}
+              className="flex items-center space-x-2 bg-white text-blue-600 hover:bg-blue-50 font-semibold py-2 px-4 rounded-lg transition-colors duration-300"
+            >
+              <History size={20} />
+              <span>Lihat Riwayat Donasi</span>
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <h2 className="text-2xl font-semibold mb-6 text-gray-900">Kampanye Terbaru</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900">Kampanye Terbaru</h2>
+          
+          {/* Mobile version of donation history button */}
+          <button
+            onClick={() => window.location.href = '/donation'}
+            className="md:hidden flex items-center space-x-2 bg-blue-600 text-white hover:bg-blue-700 font-semibold py-2 px-3 rounded-lg transition-colors duration-300"
+          >
+            <History size={18} />
+            <span className="text-sm">Riwayat</span>
+          </button>
+        </div>
 
         {campaigns.length === 0 ? (
           <div className="text-center py-12">

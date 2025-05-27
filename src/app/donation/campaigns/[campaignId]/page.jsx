@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation'; // Add this import
-import { Calendar, Users, Target, Clock, Heart, MessageSquare, User } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { Calendar, Users, Target, Clock, Heart, MessageSquare, User, ArrowLeft } from 'lucide-react'; // Add ArrowLeft icon
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('id-ID', {
@@ -53,6 +53,7 @@ const CampaignStatusBadge = ({ status }) => {
 
 export default function CampaignDetailPage() {
   const params = useParams();
+  const router = useRouter(); // Add router hook
   const campaignId = params.campaignId;
   
   const [campaign, setCampaign] = useState(null);
@@ -62,17 +63,21 @@ export default function CampaignDetailPage() {
   const [error, setError] = useState(null);
   const [donationsError, setDonationsError] = useState(null);
 
-  const donaturNames = {
-    "8f7d6543-2e1a-9c8b-7f6e-5d4c3b2a1001": "Ahmad Sutanto",
-    "9f8e7654-3f2b-ad9c-8g7f-6e5d4c3b2b02": "Siti Nurhaliza", 
-    "af9e8765-4g3c-be0d-9h8g-7f6e5d4c3c03": "Budi Prasetyo",
-    "bg0f9876-5h4d-cf1e-ai9h-8g7f6e5d4d04": "Rina Wijaya",
-    "ch1g0987-6i5e-dg2f-bj0i-9h8g7f6e5e05": "Andi Setiawan"
-  };
+  const actualCollectedAmount = donations.reduce((sum, donation) => sum + donation.amount, 0);
+
+  const uniqueDonorsCount = [...new Set(donations.map(donation => donation.donaturId))].length;
 
   const calculateProgress = () => {
     if (!campaign) return 0;
-    return Math.min((campaign.collected / campaign.target) * 100, 100);
+    return Math.min((actualCollectedAmount / campaign.target) * 100, 100);
+  };
+
+  const handleBackClick = () => {
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/');
+    }
   };
 
   useEffect(() => {
@@ -126,8 +131,6 @@ export default function CampaignDetailPage() {
     fetchDonations();
   }, [campaignId]);
 
-  const totalDonationAmount = donations.reduce((sum, donation) => sum + donation.amount, 0);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -161,7 +164,16 @@ export default function CampaignDetailPage() {
       {/* Header */}
       <header className="bg-blue-600 text-white shadow-lg">
         <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold">Detail Kampanye</h1>
+          <div className="flex items-center mb-2">
+            <button
+              onClick={handleBackClick}
+              className="flex items-center text-white hover:text-blue-200 transition-colors mr-4"
+            >
+              <ArrowLeft size={20} className="mr-1" />
+              Kembali
+            </button>
+            <h1 className="text-3xl font-bold">Detail Kampanye</h1>
+          </div>
           <p className="mt-2">Informasi lengkap kampanye dan daftar donasi</p>
         </div>
       </header>
@@ -223,7 +235,7 @@ export default function CampaignDetailPage() {
                     <Heart className="text-green-600 mr-2" size={20} />
                     <span className="text-sm font-medium text-gray-700">Terkumpul</span>
                   </div>
-                  <p className="text-lg font-bold text-green-600">{formatCurrency(campaign.collected)}</p>
+                  <p className="text-lg font-bold text-green-600">{formatCurrency(actualCollectedAmount)}</p>
                 </div>
 
                 <div className="bg-purple-50 p-4 rounded-lg">
@@ -231,7 +243,7 @@ export default function CampaignDetailPage() {
                     <Users className="text-purple-600 mr-2" size={20} />
                     <span className="text-sm font-medium text-gray-700">Donatur</span>
                   </div>
-                  <p className="text-lg font-bold text-purple-600">{campaign.donors} orang</p>
+                  <p className="text-lg font-bold text-purple-600">{uniqueDonorsCount} orang</p>
                 </div>
 
                 <div className="bg-orange-50 p-4 rounded-lg">
@@ -250,18 +262,6 @@ export default function CampaignDetailPage() {
                 <h3 className="text-xl font-bold text-gray-800">Daftar Donasi</h3>
                 <div className="text-sm text-gray-600">
                   Total: {donations.length} donasi
-                </div>
-              </div>
-
-              {/* Donation Summary - Updated for COMPLETED only */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Total Donasi</p>
-                  <p className="text-lg font-bold text-green-600">{donations.length}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Jumlah Terkumpul</p>
-                  <p className="text-lg font-bold text-blue-600">{formatCurrency(totalDonationAmount)}</p>
                 </div>
               </div>
 
@@ -297,9 +297,7 @@ export default function CampaignDetailPage() {
                             <User size={20} className="text-blue-600" />
                           </div>
                           <div>
-                            <p className="font-medium text-gray-800">
-                              {donaturNames[donation.donaturId] || `Donatur ${donation.donaturId.slice(-4)}`}
-                            </p>
+                            <p className="font-medium text-gray-800">Seseorang</p>
                             <p className="text-sm text-gray-500 flex items-center">
                               <Calendar size={12} className="mr-1" />
                               {formatDate(donation.datetime)}

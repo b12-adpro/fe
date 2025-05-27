@@ -1,21 +1,20 @@
 "use client";
-import { Calendar, Clock, AlertTriangle, CheckCircle, X, Eye, CreditCard, XCircle, MessageSquare, Edit } from 'lucide-react';
+import { Calendar, Clock, AlertTriangle, CheckCircle, X, Eye, CreditCard, XCircle, MessageSquare, Edit, ArrowLeft } from 'lucide-react';
 import { PropTypes } from 'prop-types';
-import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-// Hardcoded donatur ID for demonstration
 const DONATUR_ID = "8f7d6543-2e1a-9c8b-7f6e-5d4c3b2a1001";
 
-// Campaign titles mapping (placeholder for real API integration)
+// Campaign titles mapping
 const campaignTitles = {
-  "550e8400-e29b-41d4-a716-446655440000": "Bantu Korban Banjir di Kalimantan",
-  "550e8400-e29b-41d4-a716-446655440001": "Pendidikan untuk Anak-anak Papua",
-  "550e8400-e29b-41d4-a716-446655440002": "Perbaikan Fasilitas Panti Asuhan",
-  "550e8400-e29b-41d4-a716-446655440003": "Bantuan Medis untuk Lansia",
+  "a1b2c3d4-e5f6-7890-abcd-ef1234567890": "Bantuan untuk Pendidikan Anak Yatim",
+  "b2c3d4e5-f6g7-8901-bcde-f23456789012": "Pembangunan Masjid Al-Hidayah",
+  "c3d4e5f6-g7h8-9012-cdef-345678901234": "Bantuan Korban Bencana Alam",
+  "d4e5f6g7-h8i9-0123-defg-456789012345": "Program Beasiswa Mahasiswa Kurang Mampu",
+  "e5f6g7h8-i9j0-1234-efgh-567890123456": "Operasi Jantung Anak"
 };
 
-// Format currency in Indonesian Rupiah
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -24,7 +23,6 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-// Format date to Indonesian format
 const formatDate = (dateString) => {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat('id-ID', {
@@ -94,11 +92,19 @@ export default function DonationHistoryPage() {
   const [statusUpdateResult, setStatusUpdateResult] = useState(null);
   const [messageUpdateResult, setMessageUpdateResult] = useState(null);
 
+  // Handle back button click
+  const handleBackClick = () => {
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/'); // fallback to home page
+    }
+  };
+
   useEffect(() => {
     const fetchDonations = async () => {
       setLoading(true);
       try {
-        // In a real app, this would be an actual API call
         const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/donaturs/${DONATUR_ID}`);
         const data = await response.json();
 
@@ -106,7 +112,10 @@ export default function DonationHistoryPage() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        setDonations(data);
+        // Sort donations by datetime (newest first)
+        const sortedDonations = data.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+
+        setDonations(sortedDonations);
         setError(null);
       } catch (err) {
         setError("Gagal memuat data donasi. Silakan coba lagi nanti.");
@@ -154,8 +163,7 @@ export default function DonationHistoryPage() {
     setIsSubmitting(true);
     try {
       console.log('Updating donation message:', { donationId, message });
-      
-      // Create URL with query parameters instead of JSON body
+
       const url = new URL(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/message`);
       url.searchParams.append('donationId', donationId);
       url.searchParams.append('message', message);
@@ -177,8 +185,6 @@ export default function DonationHistoryPage() {
         }
         throw new Error(errorMessage);
       }
-
-      const updatedDonation = await response.json();
 
       const updatedDonations = donations.map(donation => {
         if (donation.donationId === donationId) {
@@ -220,7 +226,6 @@ export default function DonationHistoryPage() {
   const cancelDonation = async (donationId) => {
     setIsSubmitting(true);
     try {
-      // Log the request data for debugging
       console.log('Canceling donation:', donationId);
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/cancel`, {
@@ -228,12 +233,10 @@ export default function DonationHistoryPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        // Send the UUID directly as JSON string, not as an object property
         body: JSON.stringify(donationId),
       });
       
       if (response.ok) {
-        const updatedDonation = await response.json();
         setStatusUpdateResult({
           success: true,
           message: 'Berhasil membatalkan donasi.'
@@ -285,7 +288,6 @@ export default function DonationHistoryPage() {
         status: "COMPLETED"
       };
 
-      // Log the request data for debugging
       console.log('Submitting payment:', paymentData);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/campaigns`, {
@@ -303,7 +305,6 @@ export default function DonationHistoryPage() {
           message: "Pembayaran berhasil! Donasi Anda telah dikonfirmasi."
         });
 
-        // Update the donation status in the local state
         const updatedDonations = donations.map(donation => {
           if (donation.donationId === selectedDonation.donationId) {
             return { ...donation, status: 'COMPLETED', amount: parseInt(donationAmount) };
@@ -347,7 +348,16 @@ export default function DonationHistoryPage() {
       {/* Header */}
       <header className="bg-blue-600 text-white shadow-lg">
         <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold">Riwayat Donasi</h1>
+          <div className="flex items-center mb-2">
+            <button
+              onClick={handleBackClick}
+              className="flex items-center text-white hover:text-blue-200 transition-colors mr-4"
+            >
+              <ArrowLeft size={20} className="mr-1" />
+              Kembali
+            </button>
+            <h1 className="text-3xl font-bold">Riwayat Donasi</h1>
+          </div>
           <p className="mt-2">Kelola semua donasi yang telah Anda berikan</p>
         </div>
       </header>
@@ -355,7 +365,6 @@ export default function DonationHistoryPage() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-2">Donatur ID: {DONATUR_ID}</h2>
           <p className="text-gray-600">Total Donasi: {donations.length}</p>
         </div>
 
