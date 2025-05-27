@@ -1,5 +1,5 @@
 "use client";
-import { Calendar, Clock, AlertTriangle, CheckCircle, X, Eye, CreditCard, XCircle, MessageSquare, Edit, Trash2 } from 'lucide-react';
+import { Calendar, Clock, AlertTriangle, CheckCircle, X, Eye, CreditCard, XCircle, MessageSquare, Edit } from 'lucide-react';
 import { PropTypes } from 'prop-types';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
