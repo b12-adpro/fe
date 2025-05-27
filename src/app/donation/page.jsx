@@ -6,15 +6,6 @@ import { useRouter } from 'next/navigation';
 
 const DONATUR_ID = "8f7d6543-2e1a-9c8b-7f6e-5d4c3b2a1001";
 
-// Campaign titles mapping
-const campaignTitles = {
-  "a1b2c3d4-e5f6-7890-abcd-ef1234567890": "Bantuan untuk Pendidikan Anak Yatim",
-  "b2c3d4e5-f6g7-8901-bcde-f23456789012": "Pembangunan Masjid Al-Hidayah",
-  "c3d4e5f6-g7h8-9012-cdef-345678901234": "Bantuan Korban Bencana Alam",
-  "d4e5f6g7-h8i9-0123-defg-456789012345": "Program Beasiswa Mahasiswa Kurang Mampu",
-  "e5f6g7h8-i9j0-1234-efgh-567890123456": "Operasi Jantung Anak"
-};
-
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -80,6 +71,7 @@ StatusBadge.propTypes = {
 export default function DonationHistoryPage() {
   const router = useRouter();
   const [donations, setDonations] = useState([]);
+  const [campaigns, setCampaigns] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDonation, setSelectedDonation] = useState(null);
@@ -92,40 +84,75 @@ export default function DonationHistoryPage() {
   const [statusUpdateResult, setStatusUpdateResult] = useState(null);
   const [messageUpdateResult, setMessageUpdateResult] = useState(null);
 
+  // Helper function to get campaign title
+  const getCampaignTitle = (campaignId) => {
+    return campaigns[campaignId] || "Kampanye";
+  };
+
   // Handle back button click
   const handleBackClick = () => {
     if (window.history.length > 1) {
       router.back();
     } else {
-      router.push('/'); // fallback to home page
+      router.push('/');
+    }
+  };
+
+  const fetchCampaigns = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/campaign/all`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const campaignMap = {};
+      data.forEach(campaign => {
+        if (campaign.campaignId && campaign.judul) {
+          campaignMap[campaign.campaignId] = campaign.judul;
+        }
+      });
+
+      setCampaigns(campaignMap);
+    } catch (err) {
+      console.error("Error fetching campaigns:", err);
+    }
+  };
+
+  const fetchDonations = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/donaturs/${DONATUR_ID}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const sortedDonations = data.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+
+      setDonations(sortedDonations);
+      setError(null);
+    } catch (err) {
+      setError("Gagal memuat data donasi. Silakan coba lagi nanti.");
+      console.error("Error fetching donations:", err);
     }
   };
 
   useEffect(() => {
-    const fetchDonations = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/donaturs/${DONATUR_ID}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        // Sort donations by datetime (newest first)
-        const sortedDonations = data.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
-
-        setDonations(sortedDonations);
-        setError(null);
-      } catch (err) {
-        setError("Gagal memuat data donasi. Silakan coba lagi nanti.");
-        console.error("Error fetching donations:", err);
+        await Promise.all([
+          fetchCampaigns(),
+          fetchDonations()
+        ]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDonations();
+    fetchData();
   }, []);
 
   const openPaymentModal = (donation) => {
@@ -392,7 +419,7 @@ export default function DonationHistoryPage() {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-lg font-semibold mb-1 text-gray-700">
-                        {campaignTitles[donation.campaignId] || "Kampanye"}
+                        {getCampaignTitle(donation.campaignId)}
                       </h3>
                       <p className="text-gray-500 text-sm flex items-center">
                         <Calendar size={14} className="mr-1" />
@@ -487,7 +514,7 @@ export default function DonationHistoryPage() {
               ) : (
                 <>
                   <p className="mb-4 text-gray-600">
-                    Kampanye: <span className="font-semibold">{campaignTitles[selectedDonation.campaignId]}</span>
+                    Kampanye: <span className="font-semibold">{getCampaignTitle(selectedDonation.campaignId)}</span>
                   </p>
 
                   <div className="mb-6">
@@ -558,7 +585,7 @@ export default function DonationHistoryPage() {
               ) : (
                 <>
                   <p className="mb-4 text-gray-600">
-                    Kampanye: <span className="font-semibold">{campaignTitles[selectedDonation.campaignId]}</span>
+                    Kampanye: <span className="font-semibold">{getCampaignTitle(selectedDonation.campaignId)}</span>
                   </p>
 
                   <div className="mb-6">
