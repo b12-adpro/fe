@@ -93,7 +93,7 @@ const DonationHistoryTable: React.FC<Props> = ({ donations }) => {
           <tbody>
             {currentItems.map((donation) => (
               <tr key={donation.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium">
+                <td className="px-4 py-3 font-medium  text-gray-500">
                   Rp {donation.amount.toLocaleString('id-ID')}
                 </td>
                 <td className="px-4 py-3 text-gray-500">

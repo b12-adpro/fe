@@ -3,7 +3,7 @@ import UserTable from './components/UserTable';
 
 export default function UserPage() {
   return (
-    <div className="p-6">
+    <div className="p-6  text-gray-800">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
         <h1 className="text-2xl font-bold">User Management</h1>
 

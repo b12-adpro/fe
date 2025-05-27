@@ -133,7 +133,7 @@ export default function CampaignPage() {
   if (loading) return <p className="text-center">Loading campaigns...</p>;
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
+    <div className="bg-white rounded-lg shadow-lg p-6 text-gray-800">
       <div className="flex flex-wrap gap-4 mb-6">
         <div>
           <label className="block font-semibold mb-1">Filter Verification Status:</label>
@@ -166,7 +166,7 @@ export default function CampaignPage() {
       <div className="overflow-x-auto">
         <table className="w-full table-auto border-collapse">
           <thead>
-            <tr className="bg-gray-100 text-gray-600 text-sm leading-normal">
+            <tr className="bg-gray-100 text-gray-800 text-sm leading-normal">
               <th className="py-3 px-4 text-left">Title</th>
               <th className="py-3 px-4 text-left">Target</th>
               <th className="py-3 px-4 text-left">Current</th>

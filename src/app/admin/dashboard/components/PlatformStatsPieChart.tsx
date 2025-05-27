@@ -50,7 +50,7 @@ export default function PlatformStatsPieChart({ stats }: { stats: PlatformStats 
             <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-100">
               <div className="flex items-center mb-1">
                 <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                <span className="text-sm text-gray-600">{item.name}</span>
+                <span className="text-sm  text-gray-800">{item.name}</span>
               </div>
               <p className="text-2xl font-bold text-gray-800">{item.value.toLocaleString()}</p>
               <p className="text-xs text-gray-500 mt-1">

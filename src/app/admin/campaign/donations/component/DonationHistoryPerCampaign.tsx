@@ -131,10 +131,10 @@ export default function DonationHistoryPerCampaign({ campaignId }: { campaignId:
               {currentDonations.length > 0 ? (
                 currentDonations.map((donation) => (
                   <tr key={donation.id} className="hover:bg-gray-50">
-                    <td className="border px-4 py-3 font-medium">
+                    <td className="border px-4 py-3 font-medium text-gray-800">
                       Rp {donation.amount.toLocaleString('id-ID')}
                     </td>
-                    <td className="border px-4 py-3 text-sm text-gray-600">
+                    <td className="border px-4 py-3 text-sm text-gray-800">
                       {formatDate(donation.donatedAt)}
                     </td>
                   </tr>
@@ -152,7 +152,7 @@ export default function DonationHistoryPerCampaign({ campaignId }: { campaignId:
 
         {totalPages > 1 && (
           <div className="flex justify-between items-center mt-4">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm  text-gray-800">
               Menampilkan {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, sortedDonations.length)} dari {sortedDonations.length} donasi
             </div>
             <div className="flex space-x-1">

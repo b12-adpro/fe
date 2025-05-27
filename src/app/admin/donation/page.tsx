@@ -68,7 +68,7 @@ export default function AllDonationsPage() {
           </div>
           
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-            <div className="text-sm font-medium text-gray-500 mb-1">Rata-rata Donasi</div>
+            <div className="text-sm font-medium text-gray-500 mb-1">Rata-rata donasi</div>
             <div className="text-2xl font-bold text-blue-600">
               Rp {donations.length > 0 
                 ? Math.round(totalAmount / donations.length).toLocaleString('id-ID') 

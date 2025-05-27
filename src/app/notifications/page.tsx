@@ -63,7 +63,7 @@ export default function NotificationsPage() {
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
-            <span className="ml-2 text-gray-600">Memuat notifikasi...</span>
+            <span className="ml-2 text-gray-800">Memuat notifikasi...</span>
           </div>
         ) : error ? (
           <div className="bg-red-50 p-4 rounded-md border border-red-200">

@@ -100,7 +100,7 @@ export default function UserTable() {
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          <p className="mt-4 text-gray-600">Memuat data pengguna...</p>
+          <p className="mt-4 text-gray-800">Memuat data pengguna...</p>
         </div>
       </div>
     );
@@ -133,7 +133,7 @@ export default function UserTable() {
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Kirim Notifikasi ke Semua Pengguna</h2>
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Judul Notifikasi</label>
+            <label className="block text-gray-800 mb-2">Judul Notifikasi</label>
             <input
               type="text"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -175,7 +175,7 @@ export default function UserTable() {
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       />
-                      <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+                      <Search className="absolute left-3 top-2.5 text-gray-800" size={18} />
                   </div>
                 </div>
             </div>
@@ -183,13 +183,13 @@ export default function UserTable() {
           <div className="overflow-x-auto">
             <table className="w-full table-auto border-collapse">
               <thead>
-                <tr className="bg-gray-100 text-gray-600 text-sm leading-normal">
+                <tr className="bg-gray-100 text-gray-800 text-sm leading-normal">
                   <th className="py-3 px-4 text-left">Nama</th>
                   <th className="py-3 px-4 text-left">Status</th>
                   <th className="py-3 px-4 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="text-gray-600 text-sm">
+              <tbody className=" text-gray-800 text-sm">
                 {filteredUsers.length > 0 ? (
                   filteredUsers.map((user) => (
                     <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50">
@@ -249,7 +249,7 @@ export default function UserTable() {
               <div className="overflow-x-auto">
                 <table className="w-full table-auto">
                   <thead>
-                    <tr className="bg-gray-100 text-gray-600 text-sm">
+                    <tr className="bg-gray-100 text-gray-800 text-sm">
                       <th className="py-2 px-4 text-left">Kampanye</th>
                       <th className="py-2 px-4 text-right">Jumlah Donasi</th>
                       <th className="py-2 px-4 text-center">Tanggal</th>

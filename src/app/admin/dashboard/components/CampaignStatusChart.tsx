@@ -13,7 +13,7 @@ export default function CampaignStatusChart({ stats }: { stats: CampaignStats })
   const data = [
     { name: 'Upcoming', value: stats.upcomingCampaigns, color: '#F59E0B' },
     { name: 'Active', value: stats.activeCampaigns, color: '#10B981' },
-    { name: 'Completed', value: stats.completedCampaigns, color: '#4F46E5' },
+    { name: 'Completed/Rejected', value: stats.completedCampaigns, color: '#4F46E5' },
   ];
 
   const totalCampaigns = data.reduce((sum, item) => sum + item.value, 0);
