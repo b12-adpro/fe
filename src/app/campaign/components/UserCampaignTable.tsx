@@ -181,16 +181,13 @@ export default function UserCampaignTable() {
       closeAddModal();
   };
 
+  // --- LOGIKA FILTER DIPERBAIKI ---
   const filteredCampaigns = Array.isArray(campaigns) ? campaigns.filter((campaign) => {
-    const verificationMatch =
-      verificationFilter === 'ALL' || campaign.status === verificationFilter;
-    const progressMatch =
-      progressFilter === 'ALL' ||
-      (progressFilter === 'UPCOMING' && campaign.status === 'PENDING') ||
-      (progressFilter === 'ACTIVE' && campaign.status === 'ACTIVE') ||
-      (progressFilter === 'COMPLETED' && campaign.status === 'INACTIVE');
+    const verificationMatch = verificationFilter === 'ALL' || campaign.status === verificationFilter;
+    const progressMatch = progressFilter === 'ALL' || campaign.status === progressFilter;
     return verificationMatch && progressMatch;
   }) : [];
+  // --- AKHIR PERBAIKAN ---
 
 
   const formatDate = (dateString: string | null | undefined) => {
