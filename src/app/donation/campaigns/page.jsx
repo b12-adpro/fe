@@ -34,7 +34,7 @@ export default function CampaignsPage() {
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/campaign/all`);
+        const response = await fetch(`http://3.211.204.60/api/campaign/all`);
         if (!response.ok) {
           throw new Error('Failed to fetch campaigns');
         }
@@ -81,7 +81,7 @@ export default function CampaignsPage() {
         message: donationMessage,
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/campaigns`, {
+      const response = await fetch(`http://3.211.204.60/api/donations/campaigns`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

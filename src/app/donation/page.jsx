@@ -100,7 +100,7 @@ export default function DonationHistoryPage() {
 
   const fetchCampaigns = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/campaign/all`);
+      const response = await fetch(`http://3.211.204.60/api/campaign/all`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -122,7 +122,7 @@ export default function DonationHistoryPage() {
 
   const fetchDonations = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/donaturs/${DONATUR_ID}`);
+      const response = await fetch(`http://3.211.204.60/api/donations/donaturs/${DONATUR_ID}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -191,7 +191,7 @@ export default function DonationHistoryPage() {
     try {
       console.log('Updating donation message:', { donationId, message });
 
-      const url = new URL(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/message`);
+      const url = new URL(`http://3.211.204.60/api/donations/message`);
       url.searchParams.append('donationId', donationId);
       url.searchParams.append('message', message);
       
@@ -255,7 +255,7 @@ export default function DonationHistoryPage() {
     try {
       console.log('Canceling donation:', donationId);
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/cancel`, {
+      const response = await fetch(`http://3.211.204.60/api/donations/cancel`, {
         method: 'PATCH', 
         headers: {
           'Content-Type': 'application/json',
@@ -317,7 +317,7 @@ export default function DonationHistoryPage() {
 
       console.log('Submitting payment:', paymentData);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/campaigns`, {
+      const response = await fetch(`http://3.211.204.60/api/donations/campaigns`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

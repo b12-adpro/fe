@@ -87,7 +87,7 @@ export default function CampaignDetailPage() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/campaign/campaignId/${campaignId}`);
+        const response = await fetch(`http://3.211.204.60/api/campaign/campaignId/${campaignId}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -110,7 +110,7 @@ export default function CampaignDetailPage() {
       setDonationsLoading(true);
       setDonationsError(null);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/campaigns/${campaignId}`);
+        const response = await fetch(`http://3.211.204.60/api/donations/campaigns/${campaignId}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
