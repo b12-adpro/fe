@@ -1,51 +1,9 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Clock, Target, Heart } from 'lucide-react';
 
-// Dummy data for campaigns
-const dummyCampaigns = [
-  {
-    campaignId: "550e8400-e29b-41d4-a716-446655440000",
-    fundraiserId: "7a1b0428-13e3-4a6a-9d1b-a24df3ac0001",
-    judul: "Bantu Korban Banjir di Kalimantan",
-    status: "Aktif",
-    datetime: "2025-05-15T08:30:00",
-    target: 50000000,
-    deskripsi: "Kampanye ini bertujuan untuk membantu korban banjir di Kalimantan yang kehilangan tempat tinggal dan kebutuhan pokok.",
-    collected: 27500000, // Dummy data for collected amount
-    donors: 143, // Dummy data for number of donors
-    daysLeft: 12, // Dummy data for remaining days
-  },
-  {
-    campaignId: "550e8400-e29b-41d4-a716-446655440001",
-    fundraiserId: "7a1b0428-13e3-4a6a-9d1b-a24df3ac0002",
-    judul: "Pendidikan untuk Anak-anak Papua",
-    status: "Aktif",
-    datetime: "2025-05-10T14:45:00",
-    target: 75000000,
-    deskripsi: "Membantu menyediakan fasilitas pendidikan dan buku-buku untuk anak-anak di pedalaman Papua yang kesulitan mengakses pendidikan.",
-    collected: 45000000, // Dummy data for collected amount
-    donors: 278, // Dummy data for number of donors
-    daysLeft: 20, // Dummy data for remaining days
-  },
-  {
-    campaignId: "550e4400-e29b-41d4-a716-446655440001",
-    fundraiserId: "7axb0428-13e3-4a6a-9d1b-a24df3ac0002",
-    judul: "Aku Ingin Pulang",
-    status: "Aktif",
-    datetime: "2025-05-10T14:45:00",
-    target: 75000000,
-    deskripsi: "Membantu menyediakan fasilitas pendidikan dan buku-buku untuk anak-anak di pedalaman Papua yang kesulitan mengakses pendidikan.",
-    collected: 45000000, // Dummy data for collected amount
-    donors: 278, // Dummy data for number of donors
-    daysLeft: 20, // Dummy data for remaining days
-  }
-];
-
-// Hardcoded donatur ID for donation
 const donaturId = "8f7d6543-2e1a-9c8b-7f6e-5d4c3b2a1001";
 
-// Format currency in Indonesian Rupiah
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -54,7 +12,6 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-// Format date to Indonesian format
 const formatDate = (dateString) => {
   return new Intl.DateTimeFormat('id-ID', {
     day: 'numeric',
@@ -64,12 +21,35 @@ const formatDate = (dateString) => {
 };
 
 export default function CampaignsPage() {
+  const [campaigns, setCampaigns] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [donationAmount, setDonationAmount] = useState("");
   const [donationMessage, setDonationMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState(null);
+
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/campaign/all`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch campaigns');
+        }
+        const data = await response.json();
+        setCampaigns(data);
+      } catch (error) {
+        console.error('Error fetching campaigns:', error);
+        setError('Failed to load campaigns. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCampaigns();
+  }, []);
 
   const openDonationModal = (campaign) => {
     setSelectedCampaign(campaign);
@@ -97,11 +77,11 @@ export default function CampaignsPage() {
         campaignId: selectedCampaign.campaignId,
         donaturId: donaturId,
         amount: parseInt(donationAmount),
+        status: "COMPLETED",
         message: donationMessage,
-        datetime: new Date().toISOString()
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/campaigns/${selectedCampaign.campaignId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/campaigns`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,7 +95,14 @@ export default function CampaignsPage() {
           success: true,
           message: "Donasi berhasil! Terima kasih atas kebaikan Anda."
         });
-        // In a real app, we would refresh the campaigns data here
+
+        setCampaigns(prevCampaigns =>
+          prevCampaigns.map(campaign =>
+            campaign.campaignId === selectedCampaign.campaignId
+              ? { ...campaign, collected: campaign.collected + parseInt(donationAmount) }
+              : campaign
+          )
+        );
       } else {
         const errorData = await response.json();
         setSubmitResult({
@@ -135,6 +122,42 @@ export default function CampaignsPage() {
 
   const isButtonDisabled = !donationAmount || parseInt(donationAmount) <= 0 || isSubmitting;
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-blue-600 text-white shadow-lg">
+          <div className="container mx-auto px-4 py-6">
+            <h1 className="text-3xl font-bold">Platform Donasi Peduli</h1>
+            <p className="mt-2">Bantu sesama dengan donasi untuk kampanye yang bermakna</p>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center h-64">
+            <div className="text-xl text-gray-600">Memuat kampanye...</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-blue-600 text-white shadow-lg">
+          <div className="container mx-auto px-4 py-6">
+            <h1 className="text-3xl font-bold">Platform Donasi Peduli</h1>
+            <p className="mt-2">Bantu sesama dengan donasi untuk kampanye yang bermakna</p>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center h-64">
+            <div className="text-xl text-red-600">{error}</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -149,71 +172,85 @@ export default function CampaignsPage() {
       <main className="container mx-auto px-4 py-8">
         <h2 className="text-2xl font-semibold mb-6 text-gray-900">Kampanye Terbaru</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {dummyCampaigns.map(campaign => (
-            <div key={campaign.campaignId} className="bg-white rounded-lg shadow-md overflow-hidden">
-              {/* Campaign Image Placeholder */}
-              <div className="h-48 bg-gray-300 relative">
-                <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                  {campaign.status}
+        {campaigns.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-xl text-gray-600">Tidak ada kampanye tersedia saat ini.</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {campaigns.map(campaign => (
+              <div key={campaign.campaignId} className="bg-white rounded-lg shadow-md overflow-hidden">
+                {/* Campaign Status Badge */}
+                <div className="p-4 pb-0">
+                  <div className="inline-block bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    {campaign.status}
+                  </div>
                 </div>
-                <img src={`/api/placeholder/800/400`} alt="Campaign" className="w-full h-full object-cover" />
+
+                {/* Campaign Info */}
+                <div className="p-6">
+                  <h3 className="text-xl font-bold mb-2 text-gray-900">{campaign.judul}</h3>
+                  <p className="text-gray-600 mb-4">{campaign.deskripsi}</p>
+
+                  {/* Progress Bar */}
+                  <div className="mb-4">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">Terkumpul {formatCurrency(campaign.collected)}</span>
+                      <span className="text-gray-600">dari {formatCurrency(campaign.target)}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div 
+                        className="bg-blue-600 h-2.5 rounded-full" 
+                        style={{ width: `${Math.min(100, (campaign.collected / campaign.target) * 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Campaign Stats */}
+                  <div className="grid grid-cols-3 gap-2 mb-6">
+                    <div className="flex flex-col items-center p-2 bg-blue-50 rounded-lg">
+                      <Heart size={20} className="text-red-500 mb-1" />
+                      <span style={{ color: '#333' }} className="text-sm font-semibold">{campaign.donors}</span>
+                      <span className="text-xs text-gray-600">Donatur</span>
+                    </div>
+                    <div className="flex flex-col items-center p-2 bg-blue-50 rounded-lg">
+                      <Target size={20} className="text-blue-500 mb-1" />
+                      <span style={{ color: '#333' }} className="text-sm font-semibold">{Math.round((campaign.collected / campaign.target) * 100)}%</span>
+                      <span className="text-xs text-gray-600">Tercapai</span>
+                    </div>
+                    <div className="flex flex-col items-center p-2 bg-blue-50 rounded-lg">
+                      <Clock size={20} className="text-green-500 mb-1" />
+                      <span style={{ color: '#333' }} className="text-sm font-semibold">{campaign.daysLeft}</span>
+                      <span className="text-xs text-gray-600">Hari lagi</span>
+                    </div>
+                  </div>
+
+                  {/* Date Created */}
+                  <div className="text-sm text-gray-500 mb-4">
+                    Dibuat pada: {formatDate(campaign.datetime)}
+                  </div>
+
+                  {/* Donation Buttons */}
+                  <div className="space-y-3">
+                    <button 
+                      onClick={() => openDonationModal(campaign)}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded transition-colors duration-300"
+                    >
+                      Beri Donasi
+                    </button>
+                    
+                    <button 
+                      onClick={() => window.location.href = `/donation/campaigns/${campaign.campaignId}`}
+                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded transition-colors duration-300 border border-gray-300"
+                    >
+                      Informasi Selengkapnya
+                    </button>
+                  </div>
+                </div>
               </div>
-
-              {/* Campaign Info */}
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-2 text-gray-900">{campaign.judul}</h3>
-                <p className="text-gray-600 mb-4">{campaign.deskripsi}</p>
-
-                {/* Progress Bar */}
-                <div className="mb-4">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">Terkumpul {formatCurrency(campaign.collected)}</span>
-                    <span className="text-gray-600">dari {formatCurrency(campaign.target)}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div 
-                      className="bg-blue-600 h-2.5 rounded-full" 
-                      style={{ width: `${Math.min(100, (campaign.collected / campaign.target) * 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Campaign Stats */}
-                <div className="grid grid-cols-3 gap-2 mb-6">
-                  <div className="flex flex-col items-center p-2 bg-blue-50 rounded-lg">
-                    <Heart size={20} className="text-red-500 mb-1" />
-                    <span style={{ color: '#333' }} className="text-sm font-semibold">{campaign.donors}</span>
-                    <span className="text-xs text-gray-600">Donatur</span>
-                  </div>
-                  <div className="flex flex-col items-center p-2 bg-blue-50 rounded-lg">
-                    <Target size={20} className="text-blue-500 mb-1" />
-                    <span style={{ color: '#333' }} className="text-sm font-semibold">{Math.round((campaign.collected / campaign.target) * 100)}%</span>
-                    <span className="text-xs text-gray-600">Tercapai</span>
-                  </div>
-                  <div className="flex flex-col items-center p-2 bg-blue-50 rounded-lg">
-                    <Clock size={20} className="text-green-500 mb-1" />
-                    <span style={{ color: '#333' }} className="text-sm font-semibold">{campaign.daysLeft}</span>
-                    <span className="text-xs text-gray-600">Hari lagi</span>
-                  </div>
-                </div>
-
-                {/* Date Created */}
-                <div className="text-sm text-gray-500 mb-4">
-                  Dibuat pada: {formatDate(campaign.datetime)}
-                </div>
-
-                {/* Donation Button */}
-                <button 
-                  onClick={() => openDonationModal(campaign)}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded transition-colors duration-300"
-                >
-                  Beri Donasi
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </main>
 
       {/* Donation Modal */}

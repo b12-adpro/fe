@@ -36,6 +36,11 @@ const formatDate = (dateString) => {
   }).format(date);
 };
 
+const statusDisplayNames = {
+  COMPLETED: 'Selesai',
+  PENDING: 'Menunggu',
+  CANCELED: 'Dibatalkan',
+};
 
 // Status badge component
 const StatusBadge = ({ status }) => {
@@ -70,12 +75,6 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const statusDisplayNames = {
-  COMPLETED: 'Selesai',
-  PENDING: 'Menunggu',
-  CANCELED: 'Dibatalkan',
-};
-
 StatusBadge.propTypes = {
   status: PropTypes.oneOf(['COMPLETED', 'PENDING', 'CANCELED']).isRequired,
 };
@@ -88,66 +87,25 @@ export default function DonationHistoryPage() {
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState("");
+  const [donationAmount, setDonationAmount] = useState("");
   const [donationMessage, setDonationMessage] = useState("");
   const [originalMessage, setOriginalMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusUpdateResult, setStatusUpdateResult] = useState(null);
   const [messageUpdateResult, setMessageUpdateResult] = useState(null);
 
-  // Fetch donations
   useEffect(() => {
     const fetchDonations = async () => {
       setLoading(true);
       try {
         // In a real app, this would be an actual API call
-        const response = await fetch(`http://localhost:8080/api/donations/donaturs/${DONATUR_ID}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/donaturs/${DONATUR_ID}`);
         const data = await response.json();
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        // For demo, we'll use mock data
-        const mockData = [
-          {
-            donationId: "123e4567-e89b-12d3-a456-426614174000",
-            campaignId: "550e8400-e29b-41d4-a716-446655440000",
-            donaturId: DONATUR_ID,
-            amount: 500000,
-            status: "COMPLETED",
-            datetime: "2025-05-10T14:30:00",
-            message: "Semoga membantu para korban banjir!"
-          },
-          {
-            donationId: "123e4567-e89b-12d3-a456-426614174001",
-            campaignId: "550e8400-e29b-41d4-a716-446655440001",
-            donaturId: DONATUR_ID,
-            amount: 250000,
-            status: "PENDING",
-            datetime: "2025-05-15T09:45:00",
-            message: "Untuk masa depan anak-anak Papua"
-          },
-          {
-            donationId: "123e4567-e89b-12d3-a456-426614174002",
-            campaignId: "550e8400-e29b-41d4-a716-446655440002",
-            donaturId: DONATUR_ID,
-            amount: 1000000,
-            status: "PENDING",
-            datetime: "2025-05-18T16:20:00",
-            message: ""
-          },
-          {
-            donationId: "123e4567-e89b-12d3-a456-426614174003",
-            campaignId: "550e8400-e29b-41d4-a716-446655440003",
-            donaturId: DONATUR_ID,
-            amount: 750000,
-            status: "CANCELED",
-            datetime: "2025-05-05T11:15:00",
-            message: "Untuk pengobatan lansia"
-          }
-        ];
-        
+
         setDonations(data);
         setError(null);
       } catch (err) {
@@ -163,7 +121,7 @@ export default function DonationHistoryPage() {
 
   const openPaymentModal = (donation) => {
     setSelectedDonation(donation);
-    setPaymentAmount(donation.amount.toString());
+    setDonationAmount(donation.amount.toString());
     setIsPaymentModalOpen(true);
     setStatusUpdateResult(null);
   };
@@ -195,28 +153,42 @@ export default function DonationHistoryPage() {
   const updateDonationMessage = async (donationId, message) => {
     setIsSubmitting(true);
     try {
-      // In a real app, this would be an actual API call
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/donations/${donationId}/message`, {
-      //   method: 'PATCH',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({ message }),
-      // });
+      console.log('Updating donation message:', { donationId, message });
       
-      // For demo, we'll simulate a successful response
-      // const updatedDonation = await response.json();
+      // Create URL with query parameters instead of JSON body
+      const url = new URL(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/message`);
+      url.searchParams.append('donationId', donationId);
+      url.searchParams.append('message', message);
       
-      // Update the UI optimistically
+      const response = await fetch(url.toString(), {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Gagal memperbarui pesan. Silakan coba lagi.";
+        try {
+          const errorResponse = await response.json();
+          errorMessage = errorResponse.message || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+        }
+        throw new Error(errorMessage);
+      }
+
+      const updatedDonation = await response.json();
+
       const updatedDonations = donations.map(donation => {
         if (donation.donationId === donationId) {
           return { ...donation, message };
         }
         return donation;
       });
-      
+
       setDonations(updatedDonations);
-      
+
       setMessageUpdateResult({
         success: true,
         message: "Pesan berhasil diperbarui."
@@ -225,45 +197,8 @@ export default function DonationHistoryPage() {
       console.error("Error updating donation message:", error);
       setMessageUpdateResult({
         success: false,
-        message: "Gagal memperbarui pesan. Silakan coba lagi."
+        message: error.message || "Gagal memperbarui pesan. Silakan coba lagi."
       });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
-  const deleteDonationMessage = async (donationId) => {
-    // Confirmation before deleting
-    if (!window.confirm("Apakah Anda yakin ingin menghapus pesan donasi ini?")) {
-      return;
-    }
-    
-    setIsSubmitting(true);
-    try {
-      // In a real app, this would be an actual API call
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/donations/${donationId}/message`, {
-      //   method: 'DELETE',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   }
-      // });
-      
-      // For demo, we'll simulate a successful response
-      
-      // Update the UI optimistically
-      const updatedDonations = donations.map(donation => {
-        if (donation.donationId === donationId) {
-          return { ...donation, message: "" };
-        }
-        return donation;
-      });
-      
-      setDonations(updatedDonations);
-      
-      // No need for result message as we're not showing a modal
-    } catch (error) {
-      console.error("Error deleting donation message:", error);
-      alert("Gagal menghapus pesan. Silakan coba lagi.");
     } finally {
       setIsSubmitting(false);
     }
@@ -271,75 +206,140 @@ export default function DonationHistoryPage() {
 
   const handleUpdateMessage = () => {
     if (donationMessage === originalMessage) return;
+    if (!selectedDonation || !selectedDonation.donationId) {
+      console.error("No donation selected or donationId missing");
+      setMessageUpdateResult({
+        success: false,
+        message: "Data donasi tidak valid. Silakan refresh halaman."
+      });
+      return;
+    }
     updateDonationMessage(selectedDonation.donationId, donationMessage);
   };
 
-  const updateDonationStatus = async (donationId, newStatus, amount = null) => {
+  const cancelDonation = async (donationId) => {
     setIsSubmitting(true);
     try {
-      // Prepare request body based on the action
-      const requestBody = { status: newStatus };
-      if (amount !== null) {
-        requestBody.amount = parseInt(amount);
+      // Log the request data for debugging
+      console.log('Canceling donation:', donationId);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/cancel`, {
+        method: 'PATCH', 
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Send the UUID directly as JSON string, not as an object property
+        body: JSON.stringify(donationId),
+      });
+      
+      if (response.ok) {
+        const updatedDonation = await response.json();
+        setStatusUpdateResult({
+          success: true,
+          message: 'Berhasil membatalkan donasi.'
+        });
+
+        const updatedDonations = donations.map(donation => {
+          if (donation.donationId === donationId) {
+            return { ...donation, status: 'CANCELED' };
+          }
+          return donation;
+        });
+        setDonations(updatedDonations);
+      } else if (response.status === 400) {
+        const error = await response.json();
+        console.error("Error canceling donation:", error);
+        setStatusUpdateResult({
+          success: false,
+          message: error.message
+        });
+      } else {
+        console.error("Error canceling donation:", response.statusText);
+        setStatusUpdateResult({
+          success: false,
+          message: "Gagal membatalkan donasi. Silakan coba lagi."
+        });
       }
-      
-      // In a real app, this would be an actual API call
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/donations/${donationId}/status`, {
-      //   method: 'PATCH',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(requestBody),
-      // });
-      
-      // For demo, we'll simulate a successful response
-      // const updatedDonation = await response.json();
-      
-      // Update the UI optimistically
-      const updatedDonations = donations.map(donation => {
-        if (donation.donationId === donationId) {
-          const updatedDonation = { 
-            ...donation, 
-            status: newStatus,
-            amount: amount !== null ? parseInt(amount) : donation.amount
-          };
-          return updatedDonation;
-        }
-        return donation;
-      });
-      
-      setDonations(updatedDonations);
-      
-      // Show success message
-      const actionText = newStatus === "COMPLETED" ? "pembayaran" : "pembatalan";
-      setStatusUpdateResult({
-        success: true,
-        message: `Berhasil melakukan ${actionText} donasi.`
-      });
     } catch (error) {
-      console.error("Error updating donation status:", error);
+      console.error("Error canceling donation:", error);
       setStatusUpdateResult({
         success: false,
-        message: "Gagal memperbarui status donasi. Silakan coba lagi."
+        message: "Gagal membatalkan donasi. Silakan coba lagi."
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleCompleteDonation = () => {
-    if (!paymentAmount || parseInt(paymentAmount) <= 0) return;
-    updateDonationStatus(selectedDonation.donationId, "COMPLETED", paymentAmount);
-  };
+  const handleSubmitPayment = async () => {
+    if (!donationAmount || parseInt(donationAmount) <= 0) return;
 
-  const handleCancelDonation = (donationId) => {
-    // Confirmation before canceling
-    if (window.confirm("Apakah Anda yakin ingin membatalkan donasi ini?")) {
-      updateDonationStatus(donationId, "CANCELED");
+    setIsSubmitting(true);
+
+    try {
+      const paymentData = {
+        donationId: selectedDonation.donationId,
+        campaignId: selectedDonation.campaignId,
+        donaturId: DONATUR_ID,
+        amount: parseInt(donationAmount),
+        status: "COMPLETED"
+      };
+
+      // Log the request data for debugging
+      console.log('Submitting payment:', paymentData);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_DONATION_API_BASE_URL}/api/donations/campaigns`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData),
+      });
+
+      if (response.ok) {
+        await response.json();
+        setStatusUpdateResult({
+          success: true,
+          message: "Pembayaran berhasil! Donasi Anda telah dikonfirmasi."
+        });
+
+        // Update the donation status in the local state
+        const updatedDonations = donations.map(donation => {
+          if (donation.donationId === selectedDonation.donationId) {
+            return { ...donation, status: 'COMPLETED', amount: parseInt(donationAmount) };
+          }
+          return donation;
+        });
+        setDonations(updatedDonations);
+      } else {
+        const errorData = await response.json();
+        setStatusUpdateResult({
+          success: false,
+          message: errorData.message || "Terjadi kesalahan saat memproses pembayaran."
+        });
+      }
+    } catch (error) {
+      console.error("Error submitting payment:", error);
+      setStatusUpdateResult({
+        success: false,
+        message: "Gagal terhubung ke server. Silakan coba lagi nanti."
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const isPaymentButtonDisabled = !paymentAmount || parseInt(paymentAmount) <= 0 || isSubmitting;
+  const handleCancelDonation = (donationId) => {
+    if (window.confirm("Apakah Anda yakin ingin membatalkan donasi ini?")) {
+      cancelDonation(donationId);
+    }
+  };
+
+  const handleViewCampaign = (campaignId) => {
+    window.location.href = `/donation/campaigns/${campaignId}`;
+  };
+
+  const isPaymentButtonDisabled = !donationAmount || parseInt(donationAmount) <= 0 || isSubmitting;
   const isUpdateMessageButtonDisabled = donationMessage === originalMessage || isSubmitting;
 
   return (
@@ -401,7 +401,7 @@ export default function DonationHistoryPage() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex flex-wrap gap-2">
                     <button 
                       onClick={() => handleViewCampaign(donation.campaignId)}
@@ -409,7 +409,7 @@ export default function DonationHistoryPage() {
                     >
                       <Eye size={16} className="mr-1" /> Lihat Kampanye
                     </button>
-                    
+
                     {donation.status === "PENDING" && (
                       <>
                         <button 
@@ -418,7 +418,7 @@ export default function DonationHistoryPage() {
                         >
                           <CreditCard size={16} className="mr-1" /> Bayar
                         </button>
-                        
+
                         <button 
                           onClick={() => handleCancelDonation(donation.donationId)}
                           className="flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
@@ -437,12 +437,6 @@ export default function DonationHistoryPage() {
                               className="flex items-center px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors"
                             >
                               <Edit size={16} className="mr-1" /> Ubah Pesan
-                            </button>
-                            <button 
-                              onClick={() => deleteDonationMessage(donation.donationId)}
-                              className="flex items-center px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-md transition-colors"
-                            >
-                              <Trash2 size={16} className="mr-1" /> Hapus Pesan
                             </button>
                           </>
                         ) : (
@@ -467,16 +461,16 @@ export default function DonationHistoryPage() {
       {isPaymentModalOpen && selectedDonation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm" 
+          <button 
+            className="absolute inset-0 bg-black/50 pointer-events-auto" 
             onClick={closePaymentModal}
-          ></div>
-          
+          ></button>
+
           {/* Modal */}
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 z-10">
             <div className="p-6">
-              <h3 className="text-xl font-bold mb-4 text-gray-700">Pembayaran Donasi</h3>
-              
+              <h3 className="text-xl font-bold mb-4 text-gray-900">Pembayaran Donasi</h3>
+
               {statusUpdateResult ? (
                 <div className={`p-4 mb-4 rounded-lg ${statusUpdateResult.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                   {statusUpdateResult.message}
@@ -486,7 +480,7 @@ export default function DonationHistoryPage() {
                   <p className="mb-4 text-gray-600">
                     Kampanye: <span className="font-semibold">{campaignTitles[selectedDonation.campaignId]}</span>
                   </p>
-                  
+
                   <div className="mb-6">
                     <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
                       Jumlah Donasi (Rp) *
@@ -494,9 +488,9 @@ export default function DonationHistoryPage() {
                     <input
                       type="number"
                       id="amount"
-                      value={paymentAmount}
-                      onChange={(e) => setPaymentAmount(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
+                      value={donationAmount}
+                      onChange={(e) => setDonationAmount(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                       placeholder="Masukkan jumlah donasi"
                       min="1"
                       required
@@ -512,10 +506,10 @@ export default function DonationHistoryPage() {
                 >
                   {statusUpdateResult ? 'Tutup' : 'Batal'}
                 </button>
-                
+
                 {!statusUpdateResult && (
                   <button
-                    onClick={handleCompleteDonation}
+                    onClick={handleSubmitPayment}
                     className={`px-4 py-2 rounded-md font-medium ${
                       isPaymentButtonDisabled
                         ? 'bg-gray-400 cursor-not-allowed text-white'
@@ -523,7 +517,7 @@ export default function DonationHistoryPage() {
                     }`}
                     disabled={isPaymentButtonDisabled}
                   >
-                    {isSubmitting ? 'Memproses...' : 'Konfirmasi'}
+                    {isSubmitting ? 'Memproses...' : 'Konfirmasi Pembayaran'}
                   </button>
                 )}
               </div>
@@ -536,18 +530,18 @@ export default function DonationHistoryPage() {
       {isMessageModalOpen && selectedDonation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm" 
+          <button 
+            className="absolute inset-0 bg-black/50 pointer-events-auto" 
             onClick={closeMessageModal}
-          ></div>
-          
+          ></button>
+
           {/* Modal */}
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 z-10">
             <div className="p-6">
-              <h3 className="text-xl font-bold mb-4 text-gray-700">
+              <h3 className="text-xl font-bold mb-4 text-gray-900">
                 {selectedDonation.message ? 'Ubah Pesan Donasi' : 'Tambah Pesan Donasi'}
               </h3>
-              
+
               {messageUpdateResult ? (
                 <div className={`p-4 mb-4 rounded-lg ${messageUpdateResult.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                   {messageUpdateResult.message}
@@ -557,7 +551,7 @@ export default function DonationHistoryPage() {
                   <p className="mb-4 text-gray-600">
                     Kampanye: <span className="font-semibold">{campaignTitles[selectedDonation.campaignId]}</span>
                   </p>
-                  
+
                   <div className="mb-6">
                     <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
                       Pesan Donasi
@@ -566,14 +560,14 @@ export default function DonationHistoryPage() {
                       id="message"
                       value={donationMessage}
                       onChange={(e) => setDonationMessage(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                       placeholder="Tulis pesan Anda untuk kampanye ini"
                       rows={4}
                     ></textarea>
                   </div>
                 </>
               )}
-              
+
               <div className="flex justify-end space-x-3 mt-4">
                 <button
                   onClick={closeMessageModal}
@@ -581,7 +575,7 @@ export default function DonationHistoryPage() {
                 >
                   {messageUpdateResult ? 'Tutup' : 'Batal'}
                 </button>
-                
+
                 {!messageUpdateResult && (
                   <button
                     onClick={handleUpdateMessage}
