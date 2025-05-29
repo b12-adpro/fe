@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation"
 const API_BASE_URL = "https://comfortable-tonia-aryaraditya-081c5726.koyeb.app/api"
 
 export function WalletPageContent() {
-  const { user, isAuthenticated, initialAuthCheckComplete, token, logout } = useAuth()
+  const { user, isAuthenticated, initialAuthCheckComplete, token } = useAuth()
   const router = useRouter()
 
   const [wallet, setWallet] = useState<Wallet | null>(null)
@@ -34,6 +34,7 @@ export function WalletPageContent() {
 
   const fetchWalletData = useCallback(async () => {
     if (!currentUserId || !token) {
+      console.log('[WalletPageContent] fetchWalletData: Aborting, no currentUserId or token. initialAuthCheckComplete:', initialAuthCheckComplete, 'isAuthenticated:', isAuthenticated);
       if (initialAuthCheckComplete && !isAuthenticated) {
         setLoadingData(false)
       }
@@ -50,7 +51,6 @@ export function WalletPageContent() {
       const walletRes = await fetch(`${API_BASE_URL}/wallet?userId=${currentUserId}`, { headers })
       if (!walletRes.ok) {
         if (walletRes.status === 401 || walletRes.status === 403) {
-          logout()
           return
         }
         const errorData = await walletRes.json().catch(() => ({}))
@@ -62,7 +62,6 @@ export function WalletPageContent() {
       const transactionRes = await fetch(`${API_BASE_URL}/transaction/user/${currentUserId}`, { headers })
       if (!transactionRes.ok) {
         if (transactionRes.status === 401 || transactionRes.status === 403) {
-          logout()
           return
         }
         const errorData = await transactionRes.json().catch(() => ({}))
@@ -79,13 +78,12 @@ export function WalletPageContent() {
       setLoadingData(false)
       setIsRefreshing(false)
     }
-  }, [currentUserId, token, initialAuthCheckComplete, isAuthenticated, logout])
+  }, [currentUserId, token, initialAuthCheckComplete, isAuthenticated])
 
   const handleTopUp = async (amount: number) => {
     if (!currentUserId || !token) {
       setError("User not authenticated for top-up.")
-      setIsTopUpModalOpen(false)
-      return
+      throw new Error("User not authenticated for top-up.")
     }
 
     try {
@@ -99,31 +97,37 @@ export function WalletPageContent() {
         throw new Error(errorData.message || "Top up failed.")
       }
 
-      await fetchWalletData()
       setConfirmationState({ isOpen: true, status: "success", amount: amount })
+      fetchWalletData();
+
     } catch (error) {
       setConfirmationState({
         isOpen: true,
         status: "error",
         errorMessage: error instanceof Error ? error.message : "Failed to process top up.",
       })
-    } finally {
-      setIsTopUpModalOpen(false)
+      throw error;
     }
   }
 
   useEffect(() => {
+    console.log('[WalletPageContent] useEffect triggered. initialAuthCheckComplete:', initialAuthCheckComplete, 'isAuthenticated:', isAuthenticated, 'currentUserId:', currentUserId, 'token:', token ? 'present' : 'absent');
     if (initialAuthCheckComplete) {
       if (isAuthenticated && currentUserId) {
+        console.log('[WalletPageContent] Conditions met, calling fetchWalletData.');
         fetchWalletData()
       } else if (!isAuthenticated) {
+        console.log('[WalletPageContent] Not authenticated, redirecting to login.');
         router.push("/auth/login?redirect=/wallet")
       } else {
+        console.log('[WalletPageContent] Else block hit: User info not fully loaded or other issue. currentUserId:', currentUserId);
         setLoadingData(false)
         setError("User information is not fully loaded. Please try refreshing.")
       }
+    } else {
+      console.log('[WalletPageContent] initialAuthCheckComplete is false, waiting...');
     }
-  }, [initialAuthCheckComplete, isAuthenticated, currentUserId, router, fetchWalletData])
+  }, [initialAuthCheckComplete, isAuthenticated, currentUserId, router, fetchWalletData, token])
 
   if (!initialAuthCheckComplete) {
     return (
@@ -206,7 +210,9 @@ export function WalletPageContent() {
               </Link>
             </div>
             {transactions.length > 0 ? (
-              <TransactionList transactions={transactions} limit={5} />
+              <>
+                <TransactionList transactions={transactions} limit={5} />
+              </>
             ) : (
               <p className="text-gray-500 italic">No transactions yet.</p>
             )}

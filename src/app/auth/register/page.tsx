@@ -1,36 +1,67 @@
-// app/auth/register/page.tsx
 "use client"
 
-import { useState, FormEvent, useEffect } from "react"
+import type React from "react"
+
+import { useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/contexts/AuthContext"
+
+const API_BASE_URL = "http://kind-danyelle-nout-721a9e0a.koyeb.app"
 
 export default function RegisterPage() {
-  const [fullName, setFullName] = useState("")
-  const [email, setEmail] = useState("")
-  const [phoneNumber, setPhoneNumber] = useState("")
-  const [password, setPassword] = useState("")
-  const [address, setAddress] = useState("")
-
-  const { register, isAuthenticated, loading: authLoading, authError, clearAuthError } = useAuth()
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  useEffect(() => {
-    if (isAuthenticated && !authLoading) {
-        router.push("/")
-    }
-  }, [isAuthenticated, authLoading, router])
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+    if (error) setError(null)
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    await register({
-      fullNameInput: fullName,
-      emailInput: email,
-      phoneNumberInput: phoneNumber,
-      passwordInput: password,
-      addressInput: address,
-    })
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || "Registration failed")
+      }
+
+      // Registration successful, redirect to login with success message
+      router.push(`/auth/login?registered=true&email=${encodeURIComponent(formData.email)}`)
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Registration failed"
+      setError(errorMessage)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -40,66 +71,96 @@ export default function RegisterPage() {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Create your account</h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {authError && (
+          {error && (
             <div className="p-3 bg-red-100 text-red-700 rounded-md">
-              <p>{authError}</p>
+              <p>{error}</p>
             </div>
           )}
-          <div className="rounded-md shadow-sm">
-            {/* Full Name */}
-            <div className="mb-2">
-              <label htmlFor="fullName" className="sr-only">Full Name</label>
-              <input id="fullName" name="fullName" type="text" autoComplete="name" required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                placeholder="Full Name" value={fullName}
-                onChange={(e) => { setFullName(e.target.value); if (authError) clearAuthError(); }}
-                disabled={authLoading} />
-            </div>
-            {/* Email */}
-            <div className="mb-2">
-              <label htmlFor="email-address" className="sr-only">Email address</label>
-              <input id="email-address" name="email" type="email" autoComplete="email" required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                placeholder="Email address" value={email}
-                onChange={(e) => { setEmail(e.target.value); if (authError) clearAuthError(); }}
-                disabled={authLoading} />
-            </div>
-            {/* Phone Number */}
-            <div className="mb-2">
-              <label htmlFor="phoneNumber" className="sr-only">Phone Number</label>
-              <input id="phoneNumber" name="phoneNumber" type="tel" autoComplete="tel" required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                placeholder="Phone Number (e.g., +628123456789)" value={phoneNumber}
-                onChange={(e) => { setPhoneNumber(e.target.value); if (authError) clearAuthError(); }}
-                disabled={authLoading} />
-            </div>
-            {/* Password */}
-            <div className="mb-2">
-              <label htmlFor="password" className="sr-only">Password</label>
-              <input id="password" name="password" type="password" autoComplete="new-password" required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                placeholder="Password" value={password}
-                onChange={(e) => { setPassword(e.target.value); if (authError) clearAuthError(); }}
-                disabled={authLoading} />
-            </div>
-            {/* Address */}
+
+          <div className="space-y-4">
             <div>
-              <label htmlFor="address" className="sr-only">Address</label>
-              <textarea id="address" name="address" rows={3} required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                placeholder="Address" value={address}
-                onChange={(e) => { setAddress(e.target.value); if (authError) clearAuthError(); }}
-                disabled={authLoading} />
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+                Full Name
+              </label>
+              <input
+                id="fullName"
+                name="fullName"
+                type="text"
+                required
+                value={formData.fullName}
+                onChange={handleChange}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                placeholder="Enter your full name"
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                placeholder="Enter your email"
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                placeholder="Enter your password"
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                placeholder="Confirm your password"
+                disabled={loading}
+              />
             </div>
           </div>
 
           <div>
-            <button type="submit" disabled={authLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400">
-              {authLoading ? "Registering..." : "Register"}
+            <button
+              type="submit"
+              disabled={loading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400"
+            >
+              {loading ? "Creating Account..." : "Create Account"}
             </button>
           </div>
         </form>
+
         <div className="text-sm text-center">
           <Link href="/auth/login" className="font-medium text-green-600 hover:text-green-500">
             Already have an account? Sign in

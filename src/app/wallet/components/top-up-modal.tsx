@@ -32,7 +32,7 @@ export const TopUpModal = ({ isOpen, onClose, onTopUp }: TopUpModalProps) => {
       await onTopUp(Number(amount), method)
       resetForm()
     } catch (error) {
-      console.error("Top up failed:", error)
+      console.error("Top up submission failed in modal:", error)
     } finally {
       setIsSubmitting(false)
     }

@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import type { Transaction, CampaignData } from "../types"
 import { formatDate, formatCurrency } from "../utils"
 import { TransactionIcon, getTransactionLabel, getTransactionColor } from "./transaction-icon"
@@ -13,15 +13,21 @@ export const TransactionList = ({ transactions, limit }: TransactionListProps) =
   const [campaignNames, setCampaignNames] = useState<Record<string, string>>({})
   const displayTransactions = limit ? transactions.slice(0, limit) : transactions
 
+  const campaignIdsToFetch = useMemo(() => {
+    return displayTransactions
+      .filter((transaction) => transaction.campaignId && !campaignNames[transaction.campaignId]) // Only fetch if not already fetched
+      .map((transaction) => transaction.campaignId!)
+      .filter((id, index, self) => self.indexOf(id) === index) // Remove duplicates
+  }, [displayTransactions, campaignNames])
+
   // Fetch campaign names for transactions with campaignId
   useEffect(() => {
-    const fetchCampaignNames = async () => {
-      const campaignIds = displayTransactions
-        .filter((transaction) => transaction.campaignId)
-        .map((transaction) => transaction.campaignId!)
-        .filter((id, index, self) => self.indexOf(id) === index) // Remove duplicates
+    if (campaignIdsToFetch.length === 0) {
+      return
+    }
 
-      const campaignPromises = campaignIds.map(async (campaignId) => {
+    const fetchCampaignNames = async () => {
+      const campaignPromises = campaignIdsToFetch.map(async (campaignId) => {
         try {
           const response = await fetch(`http://3.211.204.60/api/campaign/campaignId/${campaignId}`)
           if (response.ok) {
@@ -44,13 +50,12 @@ export const TransactionList = ({ transactions, limit }: TransactionListProps) =
         {} as Record<string, string>,
       )
 
-      setCampaignNames(campaignMap)
+      setCampaignNames(prevCampaignNames => ({ ...prevCampaignNames, ...campaignMap }))
     }
 
-    if (displayTransactions.length > 0) {
-      fetchCampaignNames()
-    }
-  }, [displayTransactions])
+    fetchCampaignNames()
+    // useEffect now depends on the memoized campaignIdsToFetch
+  }, [campaignIdsToFetch])
 
   if (displayTransactions.length === 0) {
     return (

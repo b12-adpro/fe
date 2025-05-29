@@ -26,6 +26,7 @@ export function TransactionPageContent() {
 
   const fetchTransactions = useCallback(async () => {
     if (!currentUserId || !token) {
+      console.log('[TransactionPageContent] fetchTransactions: Aborting, no currentUserId or token. initialAuthCheckComplete:', initialAuthCheckComplete, 'isAuthenticated:', isAuthenticated);
       if (initialAuthCheckComplete && !isAuthenticated) {
         setLoading(false)
       }
@@ -117,17 +118,23 @@ export function TransactionPageContent() {
   }
 
   useEffect(() => {
+    console.log('[TransactionPageContent] useEffect triggered. initialAuthCheckComplete:', initialAuthCheckComplete, 'isAuthenticated:', isAuthenticated, 'currentUserId:', currentUserId, 'token:', token ? 'present' : 'absent');
     if (initialAuthCheckComplete) {
       if (isAuthenticated && currentUserId) {
+        console.log('[TransactionPageContent] Conditions met, calling fetchTransactions.');
         fetchTransactions()
       } else if (!isAuthenticated) {
+        console.log('[TransactionPageContent] Not authenticated, redirecting to login.');
         router.push("/auth/login?redirect=/transaction")
       } else {
+        console.log('[TransactionPageContent] Else block hit: User info not fully loaded or other issue. currentUserId:', currentUserId);
         setLoading(false)
         setError("User information is not fully loaded. Please try refreshing.")
       }
+    } else {
+      console.log('[TransactionPageContent] initialAuthCheckComplete is false, waiting...');
     }
-  }, [initialAuthCheckComplete, isAuthenticated, currentUserId, router, fetchTransactions])
+  }, [initialAuthCheckComplete, isAuthenticated, currentUserId, router, fetchTransactions, token])
 
   if (!initialAuthCheckComplete) {
     return (
