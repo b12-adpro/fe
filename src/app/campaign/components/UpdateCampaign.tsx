@@ -90,8 +90,12 @@ export default function EditCampaignForm({ campaignData, onSuccess }: EditCampai
         onSuccess();
       }, 1000);
 
-    } catch (err: any) {
-      setError(err.message || 'Terjadi kesalahan saat mengupdate kampanye');
+    } catch (err: unknown) {
+      let errorMessage = 'Terjadi kesalahan saat mengupdate kampanye';
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

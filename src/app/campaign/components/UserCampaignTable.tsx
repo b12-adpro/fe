@@ -4,8 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import DonationHistoryPerCampaign from '../../admin/campaign/donations/component/DonationHistoryPerCampaign';
 import AddCampaignForm from './CampaignForm';
 import EditCampaignForm from './UpdateCampaign';
-import { EyeIcon, PencilSquareIcon, PlusCircleIcon, XMarkIcon, TrashIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
+import { PencilSquareIcon, PlusCircleIcon, XMarkIcon, TrashIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 interface CampaignDTO {
   campaignId: string;
@@ -18,15 +17,6 @@ interface CampaignDTO {
   status: 'PENDING' | 'ACTIVE' | 'INACTIVE';
   deskripsi: string;
   buktiPenggalanganDana: string | null;
-}
-
-interface FundUsageProofDTO {
-    id: number;
-    campaignId: number;
-    title: string;
-    description: string;
-    amount: number;
-    submittedAt: string;
 }
 
 export default function UserCampaignTable() {
@@ -53,10 +43,14 @@ export default function UserCampaignTable() {
       if (!Array.isArray(data)) {
          setError("Format data kampanye tidak sesuai.");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching campaigns (Admin):', error);
       setCampaigns([]);
-      setError(error.message || 'Terjadi kesalahan');
+      let errorMessage = 'Terjadi kesalahan';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -83,14 +77,18 @@ export default function UserCampaignTable() {
              try {
                 const errorData = await response.json();
                 errorMessage = errorData.message || errorMessage;
-            } catch (e) { }
+            } catch { /* Ignored */ }
             throw new Error(errorMessage);
         }
         alert('Kampanye berhasil dihapus!');
         fetchCampaigns();
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error deleting campaign:', error);
-        alert(`Error: ${error.message}`);
+        let errorMessage = 'Gagal menghapus kampanye';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        }
+        alert(`Error: ${errorMessage}`);
     }
   };
 
@@ -122,30 +120,20 @@ export default function UserCampaignTable() {
             try {
                 const errorData = await response.json();
                 errorMessage = errorData.message || errorMessage;
-            } catch (e) { }
+            } catch { /* Ignored */ }
             throw new Error(errorMessage);
         }
 
         alert('Status kampanye berhasil diubah!');
         fetchCampaigns();
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error changing campaign status:', error);
-        alert(`Error: ${error.message}`);
+        let errorMessage = 'Gagal mengubah status kampanye';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        }
+        alert(`Error: ${errorMessage}`);
     }
-  };
-
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-white p-3 border rounded shadow max-w-xs text-sm">
-          <p className="font-semibold mb-1">{label || data.name}</p>
-          {data.description && <p className="text-gray-700 mb-1">{data.description}</p>}
-          {typeof data.amount === 'number' && <p className="text-blue-600 font-medium">💸 Amount: Rp{data.amount.toLocaleString('id-ID')}</p>}
-        </div>
-      );
-    }
-    return null;
   };
 
   const openEditModal = (campaign: CampaignDTO) => {
@@ -181,14 +169,11 @@ export default function UserCampaignTable() {
       closeAddModal();
   };
 
-  // --- LOGIKA FILTER DIPERBAIKI ---
   const filteredCampaigns = Array.isArray(campaigns) ? campaigns.filter((campaign) => {
     const verificationMatch = verificationFilter === 'ALL' || campaign.status === verificationFilter;
     const progressMatch = progressFilter === 'ALL' || campaign.status === progressFilter;
     return verificationMatch && progressMatch;
   }) : [];
-  // --- AKHIR PERBAIKAN ---
-
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return '-';
@@ -201,20 +186,17 @@ export default function UserCampaignTable() {
             hour: '2-digit',
             minute: '2-digit'
         });
-    } catch(e) {
+    } catch { /* Ignored */ }
         return dateString;
-    }
-  };
+    };
 
   const formatCurrency = (amount: number | undefined | null) => {
     if (amount === undefined || amount === null || typeof amount !== 'number') return 'N/A';
     return amount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
   }
 
-
   if (loading) return <p className="text-center py-10">Memuat kampanye...</p>;
   if (error) return <p className="text-red-500 text-center py-10">Error: {error}</p>;
-
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent, useCallback } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
 import { LoaderIcon, ErrorIcon, EditIcon, SaveIcon, CancelIcon } from "./components/icons"
@@ -48,7 +48,7 @@ export function ProfilePageContent() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   // Update the fetchProfile function to handle network errors better
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     if (!token) return
 
     setLoading(true)
@@ -105,7 +105,7 @@ export function ProfilePageContent() {
     }
 
     setLoading(false)
-  }
+  }, [token, logout])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -206,7 +206,7 @@ export function ProfilePageContent() {
         setError("User data not available.")
       }
     }
-  }, [initialAuthCheckComplete, isAuthenticated, token, user?.id, router])
+  }, [initialAuthCheckComplete, isAuthenticated, token, user?.id, router, fetchProfile])
 
   if (!initialAuthCheckComplete || loading) {
     return (
