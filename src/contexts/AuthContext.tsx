@@ -134,6 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         processAndSetAuthState(null);
     }
     setInitialAuthCheckComplete(true);
+    setLoading(false);
   }, [processAndSetAuthState]);
 
   const login = async (emailInput: string, passwordInput: string) => {
