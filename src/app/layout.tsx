@@ -2,6 +2,8 @@ import type React from "react"
 import "./globals.css"
 import type { Metadata } from "next"
 import Navbar from "@/components/navbar"
+import { AuthProvider } from "@/contexts/AuthContext"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
   title: "GatherLove Platform",
@@ -16,8 +18,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Navbar />
-        <main className="min-h-screen bg-gray-50">{children}</main>
+        <Suspense fallback={<div>Loading...</div>}>
+          <AuthProvider>
+            <Navbar />
+            <main className="min-h-screen bg-gray-50">{children}</main>
+          </AuthProvider>
+        </Suspense>
       </body>
     </html>
   )
