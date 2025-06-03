@@ -11,7 +11,7 @@ import Link from "next/link"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_WALLET
+const API_BASE_URL = "https://comfortable-tonia-aryaraditya-081c5726.koyeb.app/api"
 
 export function WalletPageContent() {
   const { user, isAuthenticated, initialAuthCheckComplete, token } = useAuth()

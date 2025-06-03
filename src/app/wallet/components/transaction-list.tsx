@@ -29,7 +29,7 @@ export const TransactionList = ({ transactions, limit }: TransactionListProps) =
     const fetchCampaignNames = async () => {
       const campaignPromises = campaignIdsToFetch.map(async (campaignId) => {
         try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_CAMPAIGN_API_URL}/campaignId/${campaignId}`)
+          const response = await fetch(`http://3.211.204.60/api/campaign/campaignId/${campaignId}`)
           if (response.ok) {
             const data: CampaignData = await response.json()
             return { campaignId, judul: data.judul }
