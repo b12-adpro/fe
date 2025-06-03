@@ -9,10 +9,10 @@ import { LoaderIcon, ErrorIcon, EditIcon, SaveIcon, CancelIcon } from "./compone
 import Link from "next/link"
 
 // Try HTTP instead of HTTPS first
-const API_BASE_URL = "http://kind-danyelle-nout-721a9e0a.koyeb.app"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_AUTH
 
 // Add fallback URLs in case the main one fails
-const FALLBACK_URLS = ["https://kind-danyelle-nout-721a9e0a.koyeb.app", "http://kind-danyelle-nout-721a9e0a.koyeb.app"]
+const FALLBACK_URLS = [process.env.NEXT_PUBLIC_API_BASE_URL_AUTH, process.env.NEXT_PUBLIC_API_BASE_URL_AUTH]
 
 interface ProfileUpdatePayload {
   fullName?: string

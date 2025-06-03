@@ -5,7 +5,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { jwtDecode } from 'jwt-decode';
 
-const AUTH_API_BASE_URL = "https://kind-danyelle-nout-721a9e0a.koyeb.app";
+const AUTH_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_AUTH;
 
 // --- Definisi Tipe (tetap sama) ---
 interface UserData {
