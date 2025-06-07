@@ -9,8 +9,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 
-const API_BASE_URL = "https://comfortable-tonia-aryaraditya-081c5726.koyeb.app/api"
-
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL_WALLET
 export function TransactionPageContent() {
   const { user, isAuthenticated, initialAuthCheckComplete, token, logout } = useAuth()
   const router = useRouter()
