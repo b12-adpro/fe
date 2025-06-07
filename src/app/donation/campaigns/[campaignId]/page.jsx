@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Calendar, Users, Target, Clock, Heart, MessageSquare, User, ArrowLeft } from 'lucide-react'; // Add ArrowLeft icon
+import { Calendar, Users, Target, Clock, Heart, MessageSquare, User, ArrowLeft } from 'lucide-react';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://3.211.204.60';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('id-ID', {
@@ -39,7 +41,6 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// Campaign Status Badge
 const CampaignStatusBadge = ({ status }) => {
   const isActive = status === 'ACTIVE';
   return (
@@ -53,7 +54,7 @@ const CampaignStatusBadge = ({ status }) => {
 
 export default function CampaignDetailPage() {
   const params = useParams();
-  const router = useRouter(); // Add router hook
+  const router = useRouter();
   const campaignId = params.campaignId;
   
   const [campaign, setCampaign] = useState(null);
@@ -87,7 +88,7 @@ export default function CampaignDetailPage() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`http://3.211.204.60/api/campaign/campaignId/${campaignId}`);
+        const response = await fetch(`${API_BASE_URL}/api/campaign/campaignId/${campaignId}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -110,7 +111,7 @@ export default function CampaignDetailPage() {
       setDonationsLoading(true);
       setDonationsError(null);
       try {
-        const response = await fetch(`http://3.211.204.60/api/donations/campaigns/${campaignId}`);
+        const response = await fetch(`${API_BASE_URL}/api/donations/campaigns/${campaignId}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -161,25 +162,24 @@ export default function CampaignDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-blue-600 text-white shadow-lg">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center mb-2">
-            <button
-              onClick={handleBackClick}
-              className="flex items-center text-white hover:text-blue-200 transition-colors mr-4"
-            >
-              <ArrowLeft size={20} className="mr-1" />
-              Kembali
-            </button>
-            <h1 className="text-3xl font-bold">Detail Kampanye</h1>
-          </div>
-          <p className="mt-2">Informasi lengkap kampanye dan daftar donasi</p>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Page Title with Back Button */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <button
+                onClick={handleBackClick}
+                className="flex items-center text-gray-600 hover:text-blue-600 transition-colors mr-4 p-2 rounded-lg hover:bg-gray-100"
+              >
+                <ArrowLeft size={20} className="mr-1" />
+                Kembali
+              </button>
+              <h1 className="text-3xl font-bold text-gray-800">Detail Kampanye</h1>
+            </div>
+          </div>
+        </div>
+
         {loading ? (
           <div className="text-center py-10">
             <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -316,7 +316,7 @@ export default function CampaignDetailPage() {
                         <div className="bg-blue-50 p-3 rounded-md">
                           <div className="flex items-start">
                             <MessageSquare size={16} className="text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
-                            <p className="text-gray-700 text-sm italic">"{donation.message}"</p>
+                            <p className="text-gray-700 text-sm">{donation.message}</p>
                           </div>
                         </div>
                       )}
