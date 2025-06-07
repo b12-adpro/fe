@@ -3,8 +3,9 @@ import { Calendar, Clock, AlertTriangle, CheckCircle, X, Eye, CreditCard, XCircl
 import { PropTypes } from 'prop-types';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from "@/contexts/AuthContext";
 
-const DONATUR_ID = "8f7d6543-2e1a-9c8b-7f6e-5d4c3b2a1001";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://3.211.204.60';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('id-ID', {
@@ -31,7 +32,6 @@ const statusDisplayNames = {
   CANCELED: 'Dibatalkan',
 };
 
-// Status badge component
 const StatusBadge = ({ status }) => {
   let bgColor, textColor, icon;
   
@@ -68,7 +68,13 @@ StatusBadge.propTypes = {
   status: PropTypes.oneOf(['COMPLETED', 'PENDING', 'CANCELED']).isRequired,
 };
 
+const sanitizeMessage = (message) => {
+  if (!message) return '';
+  return message.replace(/<[^>]*>/g, '').trim().substring(0, 500);
+};
+
 export default function DonationHistoryPage() {
+  const { user, isAuthenticated, initialAuthCheckComplete } = useAuth();
   const router = useRouter();
   const [donations, setDonations] = useState([]);
   const [campaigns, setCampaigns] = useState({});
@@ -84,12 +90,29 @@ export default function DonationHistoryPage() {
   const [statusUpdateResult, setStatusUpdateResult] = useState(null);
   const [messageUpdateResult, setMessageUpdateResult] = useState(null);
 
-  // Helper function to get campaign title
+  useEffect(() => {
+    if (initialAuthCheckComplete && !isAuthenticated) {
+      router.push('/auth/login');
+    }
+  }, [isAuthenticated, initialAuthCheckComplete, router]);
+
+  if (!initialAuthCheckComplete || !isAuthenticated || !user?.id) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const donaturId = user.id;
+
   const getCampaignTitle = (campaignId) => {
     return campaigns[campaignId] || "Kampanye";
   };
 
-  // Handle back button click
   const handleBackClick = () => {
     if (window.history.length > 1) {
       router.back();
@@ -100,16 +123,21 @@ export default function DonationHistoryPage() {
 
   const fetchCampaigns = async () => {
     try {
-      const response = await fetch(`http://3.211.204.60/api/campaign/all`);
-      const data = await response.json();
-
+      const response = await fetch(`${API_BASE_URL}/api/campaign/all`);
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
+      const data = await response.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid campaign data format');
+      }
+
       const campaignMap = {};
       data.forEach(campaign => {
-        if (campaign.campaignId && campaign.judul) {
+        if (campaign && campaign.campaignId && campaign.judul) {
           campaignMap[campaign.campaignId] = campaign.judul;
         }
       });
@@ -122,14 +150,37 @@ export default function DonationHistoryPage() {
 
   const fetchDonations = async () => {
     try {
-      const response = await fetch(`http://3.211.204.60/api/donations/donaturs/${DONATUR_ID}`);
-      const data = await response.json();
+      if (!donaturId) {
+        throw new Error('User ID not available');
+      }
 
+      const response = await fetch(`${API_BASE_URL}/api/donations/donaturs/${donaturId}`);
+      
       if (!response.ok) {
+        if (response.status === 404) {
+          setDonations([]);
+          setError(null);
+          return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const sortedDonations = data.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+      const data = await response.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid donation data format');
+      }
+
+      const validDonations = data.filter(donation => 
+        donation && 
+        donation.donationId && 
+        donation.campaignId && 
+        donation.amount !== undefined && 
+        donation.status &&
+        donation.datetime
+      );
+
+      const sortedDonations = validDonations.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
 
       setDonations(sortedDonations);
       setError(null);
@@ -140,6 +191,8 @@ export default function DonationHistoryPage() {
   };
 
   useEffect(() => {
+    if (!donaturId) return;
+
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -153,9 +206,13 @@ export default function DonationHistoryPage() {
     };
 
     fetchData();
-  }, []);
+  }, [donaturId]);
 
   const openPaymentModal = (donation) => {
+    if (!donation || !donation.donationId) {
+      console.error('Invalid donation data');
+      return;
+    }
     setSelectedDonation(donation);
     setDonationAmount(donation.amount.toString());
     setIsPaymentModalOpen(true);
@@ -171,6 +228,10 @@ export default function DonationHistoryPage() {
   };
   
   const openMessageModal = (donation) => {
+    if (!donation || !donation.donationId) {
+      console.error('Invalid donation data');
+      return;
+    }
     setSelectedDonation(donation);
     setDonationMessage(donation.message || "");
     setOriginalMessage(donation.message || "");
@@ -187,13 +248,22 @@ export default function DonationHistoryPage() {
   };
 
   const updateDonationMessage = async (donationId, message) => {
+    if (!donationId) {
+      console.error('Donation ID is required');
+      setMessageUpdateResult({
+        success: false,
+        message: "ID donasi tidak valid."
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       console.log('Updating donation message:', { donationId, message });
 
-      const url = new URL(`http://3.211.204.60/api/donations/message`);
+      const url = new URL(`${API_BASE_URL}/api/donations/message`);
       url.searchParams.append('donationId', donationId);
-      url.searchParams.append('message', message);
+      url.searchParams.append('message', sanitizeMessage(message) || '');
       
       const response = await fetch(url.toString(), {
         method: 'PATCH',
@@ -251,11 +321,20 @@ export default function DonationHistoryPage() {
   };
 
   const cancelDonation = async (donationId) => {
+    if (!donationId) {
+      console.error('Donation ID is required');
+      setStatusUpdateResult({
+        success: false,
+        message: "ID donasi tidak valid."
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       console.log('Canceling donation:', donationId);
       
-      const response = await fetch(`http://3.211.204.60/api/donations/cancel`, {
+      const response = await fetch(`${API_BASE_URL}/api/donations/cancel`, {
         method: 'PATCH', 
         headers: {
           'Content-Type': 'application/json',
@@ -281,7 +360,7 @@ export default function DonationHistoryPage() {
         console.error("Error canceling donation:", error);
         setStatusUpdateResult({
           success: false,
-          message: error.message
+          message: error.message || "Gagal membatalkan donasi."
         });
       } else {
         console.error("Error canceling donation:", response.statusText);
@@ -302,7 +381,30 @@ export default function DonationHistoryPage() {
   };
 
   const handleSubmitPayment = async () => {
-    if (!donationAmount || parseInt(donationAmount) <= 0) return;
+    const amount = parseInt(donationAmount);
+    if (!donationAmount || amount <= 0) {
+      setStatusUpdateResult({
+        success: false,
+        message: "Jumlah donasi harus lebih dari 0."
+      });
+      return;
+    }
+
+    if (!selectedDonation || !selectedDonation.donationId || !selectedDonation.campaignId) {
+      setStatusUpdateResult({
+        success: false,
+        message: "Data donasi tidak valid."
+      });
+      return;
+    }
+
+    if (!donaturId) {
+      setStatusUpdateResult({
+        success: false,
+        message: "Data pengguna tidak valid."
+      });
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -310,14 +412,15 @@ export default function DonationHistoryPage() {
       const paymentData = {
         donationId: selectedDonation.donationId,
         campaignId: selectedDonation.campaignId,
-        donaturId: DONATUR_ID,
-        amount: parseInt(donationAmount),
-        status: "COMPLETED"
+        donaturId: donaturId,
+        amount: amount,
+        status: "COMPLETED",
+        message: selectedDonation.message || ""
       };
 
       console.log('Submitting payment:', paymentData);
 
-      const response = await fetch(`http://3.211.204.60/api/donations/campaigns`, {
+      const response = await fetch(`${API_BASE_URL}/api/donations/campaigns`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -334,7 +437,7 @@ export default function DonationHistoryPage() {
 
         const updatedDonations = donations.map(donation => {
           if (donation.donationId === selectedDonation.donationId) {
-            return { ...donation, status: 'COMPLETED', amount: parseInt(donationAmount) };
+            return { ...donation, status: 'COMPLETED', amount: amount };
           }
           return donation;
         });
@@ -358,12 +461,20 @@ export default function DonationHistoryPage() {
   };
 
   const handleCancelDonation = (donationId) => {
+    if (!donationId) {
+      console.error('Donation ID is required');
+      return;
+    }
     if (window.confirm("Apakah Anda yakin ingin membatalkan donasi ini?")) {
       cancelDonation(donationId);
     }
   };
 
   const handleViewCampaign = (campaignId) => {
+    if (!campaignId) {
+      console.error('Campaign ID is required');
+      return;
+    }
     window.location.href = `/donation/campaigns/${campaignId}`;
   };
 
@@ -372,25 +483,23 @@ export default function DonationHistoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-blue-600 text-white shadow-lg">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center mb-2">
-            <button
-              onClick={handleBackClick}
-              className="flex items-center text-white hover:text-blue-200 transition-colors mr-4"
-            >
-              <ArrowLeft size={20} className="mr-1" />
-              Kembali
-            </button>
-            <h1 className="text-3xl font-bold">Riwayat Donasi</h1>
-          </div>
-          <p className="mt-2">Kelola semua donasi yang telah Anda berikan</p>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Page Header with Back Button */}
+        <div className="flex items-center mb-6">
+          <button
+            onClick={handleBackClick}
+            className="flex items-center text-blue-600 hover:text-blue-800 transition-colors mr-4 p-2 rounded-md hover:bg-blue-50"
+          >
+            <ArrowLeft size={20} className="mr-1" />
+            Kembali
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Riwayat Donasi</h1>
+            <p className="text-gray-600 mt-1">Kelola semua donasi yang telah Anda berikan</p>
+          </div>
+        </div>
+
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <p className="text-gray-600">Total Donasi: {donations.length}</p>
         </div>
@@ -403,6 +512,12 @@ export default function DonationHistoryPage() {
         ) : error ? (
           <div className="bg-red-100 text-red-800 p-4 rounded-lg">
             <p>{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            >
+              Coba Lagi
+            </button>
           </div>
         ) : donations.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
@@ -442,6 +557,7 @@ export default function DonationHistoryPage() {
                     <button 
                       onClick={() => handleViewCampaign(donation.campaignId)}
                       className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors"
+                      disabled={!donation.campaignId}
                     >
                       <Eye size={16} className="mr-1" /> Lihat Kampanye
                     </button>
@@ -451,6 +567,7 @@ export default function DonationHistoryPage() {
                         <button 
                           onClick={() => openPaymentModal(donation)}
                           className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+                          disabled={!donation.donationId}
                         >
                           <CreditCard size={16} className="mr-1" /> Bayar
                         </button>
@@ -458,6 +575,7 @@ export default function DonationHistoryPage() {
                         <button 
                           onClick={() => handleCancelDonation(donation.donationId)}
                           className="flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
+                          disabled={!donation.donationId}
                         >
                           <XCircle size={16} className="mr-1" /> Batalkan
                         </button>
@@ -471,6 +589,7 @@ export default function DonationHistoryPage() {
                             <button 
                               onClick={() => openMessageModal(donation)}
                               className="flex items-center px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors"
+                              disabled={!donation.donationId}
                             >
                               <Edit size={16} className="mr-1" /> Ubah Pesan
                             </button>
@@ -479,6 +598,7 @@ export default function DonationHistoryPage() {
                           <button 
                             onClick={() => openMessageModal(donation)}
                             className="flex items-center px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md transition-colors"
+                            disabled={!donation.donationId}
                           >
                             <MessageSquare size={16} className="mr-1" /> Beri Pesan
                           </button>
@@ -531,6 +651,9 @@ export default function DonationHistoryPage() {
                       min="1"
                       required
                     />
+                    {donationAmount && parseInt(donationAmount) <= 0 && (
+                      <p className="text-red-600 text-sm mt-1">Jumlah donasi harus lebih dari 0</p>
+                    )}
                   </div>
                 </>
               )}
@@ -599,7 +722,11 @@ export default function DonationHistoryPage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                       placeholder="Tulis pesan Anda untuk kampanye ini"
                       rows={4}
+                      maxLength={500}
                     ></textarea>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {donationMessage.length}/500 karakter
+                    </p>
                   </div>
                 </>
               )}
